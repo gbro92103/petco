@@ -1,0 +1,19 @@
+extend menu
+block content
+  - let currentAllocation = null
+  each review in reviews
+    if review.alloc.alloc_name !== currentAllocation
+      - currentAllocation = review.alloc.alloc_name
+      h2 #{review.alloc.alloc_name} - Review Due: #{review.alloc.alloc_review_due_date}
+      table.table.rcac-reviews-table
+        thead
+          tr
+            th RCAC Name
+            th Reviewed
+            th Date Reviewed
+        tbody
+          each rcacReview in reviews.filter(r => r.alloc.alloc_name === currentAllocation)
+            tr
+              td= rcacReview.rcac.full_name
+              td= rcacReview.reviewed ? 'Yes' : 'No'
+              td= rcacReview.review_date ? rcacReview.review_date.toDateString() : '--'
