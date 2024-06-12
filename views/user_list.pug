@@ -1,0 +1,49 @@
+extends menu
+
+block content
+  .table-container
+    .table-header
+      h2 Users
+      if permissions.canAddUsers
+        a(href='users/create')
+          button.button.new-row-action Add New
+
+    table.table.user-list-table
+      thead
+        tr
+          th Full Name
+          th Email
+          th Phone
+          th Username
+          th Temporary Password
+          th User Type
+          th RCAC ID
+          th Login Attempts
+          th Blocked
+          th Status
+          th Change Date
+          if permissions.canResetUserPasswords || permissions.canUpdateUsers
+            th Action
+      tbody
+        each user in users
+          tr
+            td= user.full_name
+            td= user.email
+            td= user.phone
+            td= user.user_name
+            td= user.temp_password
+            td= user.user_type
+            td= user.rcac_id ? user.rcac_id : '--'
+            td= user.login_attempts
+            td= user.blocked
+            td= user.status
+            td= user.change_date
+            if permissions.canResetUserPasswords || permissions.canUpdateUsers
+              td
+                if permissions.canResetUserPasswords
+                  a(href=`users/${user.user_id}/reset`) 
+                    button.button.reset-password-button Reset Password
+                if permissions.canUpdateUsers
+                  a(href=`users/${user.user_id}/update`) 
+                    button.button.update-button Update
+
