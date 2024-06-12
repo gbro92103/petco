@@ -1,0 +1,341 @@
+/* Menu Styling - Modified Option 3 */
+h2 {
+  margin: 10px;
+  text-align: center;
+}
+
+/* style.css */
+
+.menu {
+  display: flex;
+  justify-content: center;
+  list-style-type: none;
+  padding: 0;
+  background-color: #004A96; /* Petco blue */
+}
+
+.menu li {
+  display: inline-block; /* Display list items horizontally */
+  margin: 0 10px;
+}
+
+.menu li a {
+  text-decoration: none;
+  color: #FFFFFF; /* White text color */
+  font-weight: normal;
+  font-family: Arial, sans-serif;
+  padding: 10px;
+}
+
+.menu li a:hover {
+  font-weight: bold;
+}
+
+.menu li a.selected {
+  background-color: #FF3333;
+  font-weight: bold;
+}
+
+/*sign in out*/
+
+.sign-in-out {
+  text-align: right; /* Align the sign-in/sign-out section to the right */
+  padding: 2px 10px; /* Add padding for spacing */
+  background-color: #004A96; /* Petco blue */
+  color: #FFFFFF;
+}
+
+.welcome-msg p {
+  display: inline;
+}
+
+.sign-in-out a {
+  display: inline;
+  text-decoration: none; /* Remove underline decoration */
+  color: #FFFFFF;
+}
+
+.sign-in-out a:hover {
+  text-decoration: underline; /* Underline link on hover */
+}
+
+
+/* Allocation Settings Styling */
+.allocation-settings {
+  margin-bottom: 0px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+
+.form-field {
+  width: 23%; /* Adjust width as needed */
+  margin: 8px 0px 5px 5px; /* Add some bottom margin for spacing */
+}
+
+.form-field label {
+  display: block;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 0px;
+  margin-bottom: 5px; /* Add some bottom margin for spacing */
+}
+
+.form-field input[type="text"],
+.form-field input[type="date"],
+.form-field select {
+  width: 100%; /* Take full width of the container */
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-family: 'Arial', sans-serif;
+  border-color: red;
+  margin-bottom: 1px;
+}
+
+.required {
+  color: #ff0000; /* Red */
+}
+
+.table-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap; /* Allow wrapping to ensure both elements stay on the same line */
+  margin: 20px 0; /* Add space above and below the header */
+}
+
+.table-container h2,
+.table-container button {
+  margin: 0 10px; /* Add some space between the elements */
+}
+
+
+/* Table Styling */
+.table {
+  margin: 0 auto;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.table th,
+.table td {
+  padding: 8px;
+  border: 1px solid #ccc;
+  text-align: center;
+}
+
+.table th {
+  background-color: #005eb8; /* Petco blue */
+  color: #fff;
+}
+
+.table tbody tr:nth-child(even) {
+  background-color: #f2f2f2; /* Light gray */
+}
+
+.table tbody tr:hover {
+  background-color: #cce5ff; /* Light blue */
+}
+
+/* Font Styling */
+body {
+  font-family: 'Arial', sans-serif;
+}
+
+/* Button Styling */
+.button {
+  background-color: #005eb8; /* Petco blue */
+  color: #fff;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.button:hover {
+  background-color: #004080; /* Darker blue */
+}
+
+.delete-button {
+  background-color: #ff4d4d; /* Light red */
+  color: #fff;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  background-color: #ff3333; /* Darker red */
+}
+
+.view-edit-button, .new-row-button {
+  background-color: #005eb8; /* Petco blue */
+  color: #fff;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.view-edit-button:hover {
+  background-color: #004080; /* Darker blue */
+}
+
+.save-buttons {
+  width: 100%;
+  display: flex;
+}
+
+.save-button,
+.finalize-button,
+.export-button {
+  width: 33%;
+  margin-top: 20px;
+  margin-left: 20px;
+  margin-bottom: 0px;;
+}
+
+.summary {
+  color: black;
+  font-weight: bold;
+}
+
+.overlay-container {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+}
+
+iframe {
+  position: absolute;
+  display: block;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  height: 80%;
+  border: none;
+  box-sizing: border-box;
+}
+
+/* Adjusting the width of the notes column and revised allocation qty text box */
+.alloc-lines-table td:nth-child(15) input[type="text"] {
+  width: 300px;
+} /* Notes column */
+
+.alloc-lines-table td:nth-child(13) input[type="text"],
+.alloc-lines-table td:nth-child(14) input[type="text"] { /* Revised allocation qty text box */
+  width: 60px; /* Adjust width as needed */
+  text-align: center;
+}
+
+
+/* save, finalize, export and recalc allocation buttons */
+/* Adding border-radius to the notes column and revised allocation qty text box */
+.alloc-lines-table input[type="text"] { 
+  border-radius: 5px;
+  border: 1px solid black;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: bold;
+}
+
+.button-container {
+  display: flex;
+  flex-wrap: nowrap; /* Prevent wrapping */
+  justify-content: flex-end;
+}
+
+.image-button {
+  width: 40px; /* Adjust width and height as needed */
+  height: 40px;
+  background-color: transparent; /* Make button background transparent */
+  border: none; /* Remove button border */
+  cursor: pointer; /* Show pointer cursor on hover */
+  margin-right: 10px; /* Add margin between buttons */
+}
+
+.image-button img {
+  width: 100%; /* Make the image fill the button */
+  height: auto; /* Maintain aspect ratio */
+}
+
+
+
+
+/*password change styling */
+.container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+h1 {
+  color: #004A96;
+}
+
+.table.alloc-params-table {
+  width: 100% !important;
+}
+
+.table.alloc-params-table th,
+.table.alloc-params-table td {
+  padding: 1px 2px !important; 
+  margin: 1px 2px !important;
+  max-width: 4.35% !important;
+  width: auto !important; /* Ensure the width is not overridden */
+}
+
+.table.alloc-params-table .input-box {
+  max-width: 4.35% !important;
+  width: auto !important;
+}
+
+.table.alloc-params-table input[type="text"],
+.table.alloc-params-table input[type="date"],
+.table.alloc-params-table select {
+  width: 90% !important; /* Ensure the width is set to 100% */
+}
+
+
+.input-box {
+  border: 1px solid #004A96;
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px auto;
+  width: 320px;
+}
+
+input[type="password"] {
+  padding: 10px;
+  margin: 5px;
+  border-radius: 5px;
+  border: 1px solid #004A96;
+  width: calc(100% - 22px);
+}
+
+input[type="submit"] {
+  padding: 10px 20px;
+  background-color: #004A96;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+input[type="submit"]:hover {
+  background-color: #003366; /* Darker shade of Petco blue on hover */
+}
+
+.totals {
+  font-weight: bold;
+}

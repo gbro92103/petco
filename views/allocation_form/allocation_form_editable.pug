@@ -1,0 +1,29 @@
+
+form.settings-form(method="POST" action=`update/save-alloc-settings`) 
+  .allocation-settings
+    .form-field
+      label(for="allocationName") Allocation Name:
+        span.required *
+      input(type="text" id="allocationName" name="allocationName" value=allocation.alloc_name required)
+
+    .form-field
+      label(for="allocationDate") Allocation Date:
+        span.required *
+      input(type="date" id="allocationDate" name="allocationDate" value=allocation.alloc_date required)
+
+    .form-field
+      label(for="allocationReviewDate") Review Due Date:
+        span.required *
+      input(type="date" id="allocationReviewDate" name="allocationReviewDate" value=allocation.alloc_review_due_date required)
+
+    .form-field
+      label(for="allocationStatus") Allocation Status:
+        span.required *
+      select#allocationStatus(name="allocationStatus" required)
+        option(value="Setup" selected=(allocation.alloc_status === 'Setup')) Setup
+        option(value="RCAC Review" selected=(allocation.alloc_status === 'RCAC Review')) RCAC Review
+        option(value="Sent To Vendor" selected=(allocation.alloc_status === 'Sent To Vendor')) Sent To Vendor
+        option(value="Cancelled" selected=(allocation.alloc_status === 'Cancelled')) Cancelled
+        option(value="Complete" selected=(allocation.alloc_status === 'Complete')) Complete
+
+
