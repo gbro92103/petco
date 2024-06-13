@@ -1,8 +1,6 @@
 const newLineButton = document.querySelector('.add-new-param');
 const allocParamTable = document.querySelector('.alloc-params-table tbody');
 
-console.log("this is a test.")
-console.log("this is a test#2.")
 
 if (newLineButton) {
     newLineButton.addEventListener("click", adjustNewRowPosition);
