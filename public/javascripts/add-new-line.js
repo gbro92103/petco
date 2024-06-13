@@ -41,7 +41,7 @@ if (newLineButton) {
             { type: 'input', name: 'hard_qty_limit' },
             { type: 'field', name: 'act_alloc_qty' },
             { type: 'field', name: 'avg_cost' },
-            { type: 'input', name: 'sku_alloc_cost' },
+            { type: 'input', name: 'discounted_cost' },
             { type: 'field', name: 'total_cost' },
             { type: 'field', name: 'act_nbr_of_stores' } 
         ];

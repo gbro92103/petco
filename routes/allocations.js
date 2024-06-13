@@ -30,7 +30,7 @@ router.get("/:id/update/", requireLogin, allocation_controller.update_allocation
 
 /*save alloc params */
 router.post("/:id/update/save-alloc-settings/", requireLogin, requirePermission("canUpdateAllocations"), allocation_controller.save_alloc_settings_post);
-router.post("/:id/update/save-alloc-params/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_controller.preprocessAllocParams, allocation_controller.validateAllocParams, allocation_controller.save_alloc_params_post);
+router.post("/:id/update/save-alloc-params/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_controller.validateAllocParams, allocation_controller.save_alloc_params_post);
 
 /*save alloc lines*/
 router.post("/:id/update/save-alloc-line/", requireLogin, requirePermission("canReviewAllocations"), allocation_controller.save_alloc_line_post);

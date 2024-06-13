@@ -1,117 +1,114 @@
-if errors.length > 0
-  ul.errors-list
-    each error in errors
-      li #{error.msg}
-
-form.alloc-params-form(method="POST" action="update/save-alloc-params") 
-  table.table.alloc-params-table
-    thead
-      tr
-        th(title="Please enter the sku number.") SKU Number 
-          span.required *
-        th Description
-        th(title="Enter a like sku only if there is limited sales history for the main sku, otherwise leave blank.") Like SKU
-        th(title="Select whether you are using a Target WOS, Target Qty, or a Target Qty that ignores store Qty On Hand information.") Allocation Method
-          span.required *
-        th(title="Enter either a Target WOS -or- a company-wide Target Qty for the allocation.") Target Qty/WOS
-          span.required *
-        th(title="Select whether you want to base the allocation off of LY Sales, CY Sales, the Subclass or Sku Factor.") Main Sales Method
-          span.required *  
-        th(title="This estimate is used to calculate sales for stores that are assigned the Subclass or Sku Factor method.") Avg Weekly Sold Per Store
-          span.required *
-        th(title="Please enter an EOQ for the allocation.") EOQ
-          span.required *
-        th(title="Optional. To limit the allocation to the highest selling stores, enter the number of stores here.") Override Store Count
-        th(title="Required if a number of store limit is used. If Exclude Stores is selected, RCAC's will not be able to enter qty for lower selling stores below the specified count")  Exclude Stores  
-        th(title="Used to set a minimum per store. The allocation will assign this qty to each store at minimum.  RCAC's will be able to reduce the qty below the minimum.") Min Per Store
-        th(title="Used to set a maximum per store. The allocation will not assign a higher qty, and RCAC's will not be allowed to enter a qty higher than this number.") Max Per Store
-        th(title="Enter a vendor number if you would like the allocation to override the attached vendor for each store.") Override Vendor ID
-        th(title="If an allocation vendor is entered, selecting yes to this option will limit the allocation to only the stores that are attached to this vendor.") Limit to Attached Vendor
-        th(title="If the vendor has limited supply, select this option to notify the RCAC's not to add qty unless if they have taken from another store.") Hard Qty Limit
-        th(title="This sums the actual qty of the allocation after all settings, including RCAC changes that are made.") Actual Allocation Quantity
-        th(title="This is the average cost of the sku.") Average Cost
-        th(title="This is the special discounted allocation cost for the sku.") Alloc Cost
-          span.required *
-        th(title="This is the actual qty X the average cost.  It is the total cost of the allocation used for budgeting purposes.") Total Cost
-        th(title="This is the actual number of stores that are participating in the allocation after all sellings and RCAC changes are made.") Actual Number of Stores
-        th Action
-    tbody
-      if allocParams && allocParams.length > 0
-        each allocParam, index in allocParams
-          tr(data-row-key= index)
-            td(hidden)
-              input(type="hidden" name=`allocParams[row_index][${index}]` value=index required)
-            td(hidden)
-              input(type="hidden" name=`allocParams[alloc_param_id][${index}]` value=allocParam.alloc_param_id required)
-            td
-              input.sku(type="text" name=`allocParams[sku_nbr][${index}]` value=allocParam.sku_nbr required)
-            td.read-only(data-name=`allocParams[desc][${index}]`)= allocParam.desc !== undefined ? allocParam.desc : allocParam.sku_nbr_sku.desc !== undefined ? allocParam.sku_nbr_sku.desc : ""
-            td
-              input(type="text" name=`allocParams[like_sku][${index}]` value=allocParam.like_sku)
-            td
-              select(name=`allocParams[alloc_method][${index}]` required)
-                option(value="Target WOS" selected=allocParam.alloc_method==="Target WOS") Target WOS
-                option(value="Target Qty" selected=allocParam.alloc_method==="Target Qty") Target Qty
-                option(value="Ignore QOH/Target Qty" selected=allocParam.alloc_method==="Ignore QOH/Target Qty") Ignore QOH/Target Qty  
-            td
-              input(type="text" name=`allocParams[target_value][${index}]` value=allocParam.target_value)
-            td
-              select(name=`allocParams[main_sales_method][${index}]` required)
-                option(value="LY Sold" selected=allocParam.main_sales_method==="LY Sold") LY Sold
-                option(value="CY Sold" selected=allocParam.main_sales_method==="CY Sold") CY Sold
-                option(value="SC Factor" selected=allocParam.main_sales_method==="SC Factor") Subclass Factor
-                option(value="Sku Factor" selected=allocParam.main_sales_method==="Sku Factor") Sku Factor
-            td
-              input(type="text" name=`allocParams[avg_weekly_sold_per_store][${index}]` value=allocParam.avg_weekly_sold_per_store required)
-            td
-              input(type="text" name=`allocParams[eoq][${index}]` value=allocParam.eoq required)
-            td
-              input(type="text" name=`allocParams[override_store_count][${index}]` value=allocParam.override_store_count)
-            td
-              select(name=`allocParams[exclude_stores][${index}]`)
-                option(value="" selected=allocParam.exclude_stores==="") 
-                option(value="Yes" selected=allocParam.exclude_stores==="Yes") Yes
-                option(value="No" selected=allocParam.exclude_stores==="No") No
-            td
-              input(type="text" name=`allocParams[min_per_store][${index}]` value=allocParam.min_per_store)
-            td
-              input(type="text" name=`allocParams[max_per_store][${index}]` value=allocParam.max_per_store)
-            td
-              input(type="text" name=`allocParams[override_vend_id][${index}]` value=allocParam.override_vend_id)
-            td
-              select(name=`allocParams[limit_to_attached_vendor][${index}]`)
-                option(value="" selected=allocParam.limit_to_attached_vendor==="") 
-                option(value="Yes" selected=allocParam.limit_to_attached_vendor==="Yes") Yes
-                option(value="No" selected=allocParam.limit_to_attached_vendor==="No") No
-            td
-              input(type="text" name=`allocParams[hard_qty_limit][${index}]` value=allocParam.hard_qty_limit)
-            td.read-only(data-name=`allocParams[act_alloc_qty][${index}]`)= allocParam.act_alloc_qty
-            td.read-only(data-name=`allocParams[avg_cost][${index}]`)= allocParam.avg_cost
-            td
-              input(type="text" name=`allocParams[sku_alloc_cost][${index}]` value=allocParam.sku_alloc_cost required) 
-            td.read-only(data-name=`allocParams[total_cost][${index}]`)= allocParam.total_cost
-            td.read-only(data-name=`allocParams[act_nbr_of_stores][${index}]`)= allocParam.act_nbr_of_stores
-            td
-              button(data-row-key=index, data-param-key=allocParam.alloc_param_id, type='button').button.delete-action Delete
-      if permissions.canAddAllocParams
-        tr.add-new-row
-          td(colspan="15")
-            button(type='button').button.add-new-param Add Sku To Allocation
-          td.totals= sums.totalAllocQty 
-          td 
-          td 
-          td.totals= sums.totalAllocCost
-          td 
-          td 
-      else 
-        tr 
-          td(colspan="15")
-          td.totals= sums.totalAllocQty
-          td 
-          td 
-          td.totals= sums.totalAllocCost 
-          td 
-          td  
+ul.errors-list
+table.table.alloc-params-table
+  thead
+    tr
+      th(title="Please enter the sku number.") SKU Number 
+        span.required *
+      th Description
+      th(title="Enter a like sku only if there is limited sales history for the main sku, otherwise leave blank.") Like SKU
+      th(title="Select whether you are using a Target WOS, Target Qty, or a Target Qty that ignores store Qty On Hand information.") Allocation Method
+        span.required *
+      th(title="Enter either a Target WOS -or- a company-wide Target Qty for the allocation.") Target Qty/WOS
+        span.required *
+      th(title="Select whether you want to base the allocation off of LY Sales, CY Sales, the Subclass or Sku Factor.") Main Sales Method
+        span.required *  
+      th(title="This estimate is used to calculate sales for stores that are assigned the Subclass or Sku Factor method.") Avg Weekly Sold Per Store
+        span.required *
+      th(title="Please enter an EOQ for the allocation.") EOQ
+        span.required *
+      th(title="Optional. To limit the allocation to the highest selling stores, enter the number of stores here.") Override Store Count
+      th(title="Required if a number of store limit is used. If Exclude Stores is selected, RCAC's will not be able to enter qty for lower selling stores below the specified count")  Exclude Stores  
+      th(title="Used to set a minimum per store. The allocation will assign this qty to each store at minimum.  RCAC's will be able to reduce the qty below the minimum.") Min Per Store
+      th(title="Used to set a maximum per store. The allocation will not assign a higher qty, and RCAC's will not be allowed to enter a qty higher than this number.") Max Per Store
+      th(title="Enter a vendor number if you would like the allocation to override the attached vendor for each store.") Override Vendor ID
+      th(title="If an allocation vendor is entered, selecting yes to this option will limit the allocation to only the stores that are attached to this vendor.") Limit to Attached Vendor
+      th(title="If the vendor has limited supply, select this option to notify the RCAC's not to add qty unless if they have taken from another store.") Hard Qty Limit
+      th(title="This sums the actual qty of the allocation after all settings, including RCAC changes that are made.") Actual Allocation Quantity
+      th(title="This is the average cost of the sku.") Average Cost
+      th(title="This is the special discounted allocation cost for the sku.") Alloc Cost
+        span.required *
+      th(title="This is the actual qty X the average cost.  It is the total cost of the allocation used for budgeting purposes.") Total Cost
+      th(title="This is the actual number of stores that are participating in the allocation after all sellings and RCAC changes are made.") Actual Number of Stores
+      th Action
+  tbody
+    if allocParams && allocParams.length > 0
+      each allocParam, index in allocParams
+        tr(data-row-key= index)
+          td(hidden)
+            input(type="hidden" name=`allocParams[row_index][${index}]` value=index required)
+          td(hidden)
+            input(type="hidden" name=`allocParams[alloc_id][${index}]` value=allocParam.alloc_id required)  
+          td(hidden)
+            input(type="hidden" name=`allocParams[alloc_param_id][${index}]` value=allocParam.alloc_param_id required)
+          td
+            input.sku(type="text" name=`allocParams[sku_nbr][${index}]` value=allocParam.sku_nbr required)
+          td.read-only(data-name=`allocParams[desc][${index}]`)= allocParam.sku_nbr_sku.desc
+          td
+            input(type="text" name=`allocParams[like_sku][${index}]` value=allocParam.like_sku)
+          td
+            select(name=`allocParams[alloc_method][${index}]` required)
+              option(value="Target WOS" selected=allocParam.alloc_method==="Target WOS") Target WOS
+              option(value="Target Qty" selected=allocParam.alloc_method==="Target Qty") Target Qty
+              option(value="Ignore QOH/Target Qty" selected=allocParam.alloc_method==="Ignore QOH/Target Qty") Ignore QOH/Target Qty  
+          td
+            input(type="text" name=`allocParams[target_value][${index}]` value=allocParam.target_value)
+          td
+            select(name=`allocParams[main_sales_method][${index}]` required)
+              option(value="LY Sold" selected=allocParam.main_sales_method==="LY Sold") LY Sold
+              option(value="CY Sold" selected=allocParam.main_sales_method==="CY Sold") CY Sold
+              option(value="SC Factor" selected=allocParam.main_sales_method==="SC Factor") Subclass Factor
+              option(value="Sku Factor" selected=allocParam.main_sales_method==="Sku Factor") Sku Factor
+          td
+            input(type="text" name=`allocParams[avg_weekly_sold_per_store][${index}]` value=allocParam.avg_weekly_sold_per_store required)
+          td
+            input(type="text" name=`allocParams[eoq][${index}]` value=allocParam.eoq required)
+          td
+            input(type="text" name=`allocParams[override_store_count][${index}]` value=allocParam.override_store_count)
+          td
+            select(name=`allocParams[exclude_stores][${index}]`)
+              option(value="" selected=allocParam.exclude_stores==="") 
+              option(value="Yes" selected=allocParam.exclude_stores==="Yes") Yes
+              option(value="No" selected=allocParam.exclude_stores==="No") No
+          td
+            input(type="text" name=`allocParams[min_per_store][${index}]` value=allocParam.min_per_store)
+          td
+            input(type="text" name=`allocParams[max_per_store][${index}]` value=allocParam.max_per_store)
+          td
+            input(type="text" name=`allocParams[override_vend_id][${index}]` value=allocParam.override_vend_id)
+          td
+            select(name=`allocParams[limit_to_attached_vendor][${index}]`)
+              option(value="" selected=allocParam.limit_to_attached_vendor==="") 
+              option(value="Yes" selected=allocParam.limit_to_attached_vendor==="Yes") Yes
+              option(value="No" selected=allocParam.limit_to_attached_vendor==="No") No
+          td
+            input(type="text" name=`allocParams[hard_qty_limit][${index}]` value=allocParam.hard_qty_limit)
+          td.read-only(data-name=`allocParams[act_alloc_qty][${index}]`)= allocParam.act_alloc_qty
+          td.read-only(data-name=`allocParams[avg_cost][${index}]`)= allocParam.avg_cost
+          td
+            input(type="text" name=`allocParams[discounted_cost][${index}]` value=allocParam.sku_alloc_cost required) 
+          td.read-only(data-name=`allocParams[total_cost][${index}]`)= allocParam.total_cost
+          td.read-only(data-name=`allocParams[act_nbr_of_stores][${index}]`)= allocParam.act_nbr_of_stores
+          td
+            button(data-row-key=index, data-param-key=allocParam.alloc_param_id, type='button').button.delete-action Delete
+    if permissions.canAddAllocParams
+      tr.add-new-row
+        td(colspan="15")
+          button(type='button').button.add-new-param Add Sku To Allocation
+        td.totals= sums.totalAllocQty 
+        td 
+        td 
+        td.totals= sums.totalAllocCost
+        td 
+        td 
+    else 
+      tr 
+        td(colspan="15")
+        td.totals= sums.totalAllocQty
+        td 
+        td 
+        td.totals= sums.totalAllocCost 
+        td 
+        td  
 
 
 

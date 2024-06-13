@@ -1,7 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const db = require('../config/db');
 const permissions = require('../controllers/permissionsController');
-const { checkSchema, validationResult } = require('express-validator');
+const { check, validationResult } = require('express-validator');
 
 // Display list of all allocations.
 exports.allocations_list_get = asyncHandler(async (req, res, next) => {
@@ -94,15 +94,6 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
         });
 
         const sums = {totalAllocCost: "$0.00", totalAllocQty: 0};
-
-        console.log(req.session.errors)
-        let errors = [];
-
-        if (req.session.errors) {
-          errors = req.session.errors;
-          params = req.session.formData.data;
-          console.log("Here is the form data that is being used: ", req.session.formData);
-        }
           
         res.render("main_allocation_template", { 
           title: "Update Allocation",
@@ -111,7 +102,6 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
           allocParams: params,
           allocLines: lines, 
           sums: sums,
-          errors: errors,
           user: loggedInUser,
           menuOptions: menuOptions,
           permissions: userPermissions
@@ -127,52 +117,44 @@ exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
 });
 
 exports.save_alloc_params_post = asyncHandler(async (req, res, next) => {
-
+  const transaction = await db.sequelize.transaction();
   try {
-    const errors = validationResult(req).formatWith(customErrorFormatter);
-    req.session.errors = errors.array();
-    req.session.formData = req.body;
-    
-    if (!errors.isEmpty()) {
-      console.log('Discovered errors:', errors);
-      res.redirect(`/petco/live-animal/allocations/${req.params.id}/update`)
-      return;
-    }
-    // Process the valid data 
-    const data = req.body.data;
+    const tableData = req.body;
+    console.log('Received table data:', tableData);
 
-    for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        // Copy the data object to avoid modifying the original data
-        const param = { ...data[key], alloc_id: req.params.id };
-    
-        // Remove the row_index field
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      const uniqueErrorMessages = [...new Set(errors.array().map(error => error.msg))];
+      console.log('Discovered errors:', uniqueErrorMessages);
+      return res.status(200).json({ errors: uniqueErrorMessages });
+    }
+
+    console.log('Validation passed, saving data to the database...');
+
+    for (const key in tableData) {
+      if (tableData.hasOwnProperty(key)) {
+        const param = { ...tableData[key], alloc_id: req.params.id };
         delete param.row_index;
 
-        //check to resolve foreign key constraint errors
-        if (!param.like_sku)
-            param.like_sku = null;
+        if (!param.like_sku) param.like_sku = null;
+        if (!param.override_vend_id) param.override_vend_id = null;
 
-        if (!param.override_vend_id)
-            param.override_vend_id = null;
-
-        //save to database
         if (param.alloc_param_id) {
-    
-            await db.alloc_params.update(
-                param,
-                {where: { alloc_param_id: param.alloc_param_id }}
-            );
+          await db.alloc_params.update(param, { where: { alloc_param_id: param.alloc_param_id }, transaction });
         } else {
-            param.alloc_param_id = null;
-            await db.alloc_params.create(param);
+          param.alloc_param_id = null;
+          await db.alloc_params.create(param, { transaction });
         }
       }
     }
-  res.redirect(`/petco/live-animal/allocations/${req.params.id}/update`)
+
+    await transaction.commit();
+    res.status(200).json({ message: 'Data saved successfully.' });
   } catch (error) {
-      console.error('Error saving allocation parameters:', error);
-      res.status(500).send('Internal Server Error');
+    await transaction.rollback();
+    console.error('Error saving data:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 });
 
@@ -233,29 +215,6 @@ exports.save_alloc_line_post = asyncHandler(async (req, res, next) => {
 
 });
 
-// Middleware to normalize allocParams
-exports.preprocessAllocParams = (req, res, next) => {
-  if (req.body.allocParams) {
-    req.body.data = normalizeAllocParams(req.body.allocParams);
-  }
-  next();
-};
-
-// Function to normalize allocParams
-function normalizeAllocParams(allocParams) {
-  const data = [];
-  const rowCount = allocParams.row_index.length;
-  for (let i = 0; i < rowCount; i++) {
-    const item = {};
-    for (const key in allocParams) {
-      if (allocParams.hasOwnProperty(key)) {
-        item[key] = allocParams[key][i];
-      }
-    }
-    data.push(item);
-  }
-  return data;
-}
 
 async function isSkuExists(sku_nbr) {
   try {
@@ -285,204 +244,125 @@ async function isVendorExists(vend_id) {
   }
 }
 
-exports.validateAllocParams = checkSchema({
-  'data.*.sku_nbr': {
-    in: ['body'],
-    notEmpty: {
-      errorMessage: 'sku is required.'
-    },
-    custom: {
-      options: (value) => isSkuExists(value).then(exists => {
-        if (!exists) {
-          return Promise.reject('Sku Number is not found.');
-        }
-      })
-    }
-  },
-  'data.*.like_sku': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value) {
-          return isSkuExists(value).then(exists => {
-            if (!exists) {
-              return Promise.reject('Like Sku is not found.');
-            }
-          });
-        }
-        return true;
+exports.validateAllocParams = [
+  check('*.sku_nbr')
+    .notEmpty().withMessage('sku is required.')
+    .custom(value => isSkuExists(value).then(exists => {
+      if (!exists) {
+        return Promise.reject('Sku Number is not found.');
       }
-    }
-  },
-  'data.*.alloc_method': {
-    in: ['body'],
-    isIn: {
-      options: [['Target WOS', 'Target Qty', 'Ignore QOH/Target Qty']],
-      errorMessage: 'Allocation Method is not valid.'
-    }
-  },
-  'data.*.target_value': {
-    in: ['body'],
-    custom: {
-      options: (value, { req, path }) => {
-        const index = path.match(/\d+/)[0];
-        const alloc_method = req.body.data[index].alloc_method;
-        const numValue = parseFloat(value);
-        if (alloc_method === 'Target WOS') {
-          return numValue > 0;
-        } else {
-          return Number.isInteger(numValue) && numValue > 0;
-        }
-      },
-      errorMessage: '"Target WOS/Qty" must be greater than 0. Target Qty (if selected) must be an integer.'
-    }
-  },
-  'data.*.main_sales_method': {
-    in: ['body'],
-    isIn: {
-      options: [['CY Sold', 'LY Sold', 'Subclass Factor', 'Sku Factor']],
-      errorMessage: 'Main Sales Method is not valid.'
-    }
-  },
-  'data.*.avg_weekly_sold_per_store': {
-    in: ['body'],  
-    custom: {
-      options: (value) => {
-        return parseFloat(value) > 0;
-      },
-      errorMessage: 'Avg Weekly Sold must be a positive number greater than zero.'
-    }
-  },
-  'data.*.eoq': {
-    in: ['body'],
-    isInt: {
-      options: { min: 1 },
-      errorMessage: 'EOQ must be a positive integer greater than zero.'
-    }
-  },
-  'data.*.override_store_count': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return Number.isInteger(Number(value)) && Number(value) > 0;
-      },
-      errorMessage: 'Override Store Count must be a positive integer greater than zero.'
-    }
-  },
-  'data.*.exclude_stores': {
-    in: ['body'],
-    optional: true,
-    isIn: {
-      options: [['', 'Yes', 'No']],
-      errorMessage: 'Exclude Stores must be Yes or No.'
-    }
-  },
-  'data.*.min_per_store': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return Number.isInteger(Number(value)) && Number(value) > 0;
-      },
-      errorMessage: 'Min Per Store must be a positive integer greater than zero.'
-    },
-    custom: {
-      options: (value, { req, path }) => {
-        const index = path.match(/\d+/)[0];
-        const max_per_store = req.body.data[index].max_per_store;
-        if (max_per_store && value > max_per_store) {
-          throw new Error('Min Per Store must be less than Max Per Store.');
-        }
-        return true;
+    })),
+    
+  check('*.like_sku')
+    .optional()
+    .custom(value => {
+      if (value) {
+        return isSkuExists(value).then(exists => {
+          if (!exists) {
+            return Promise.reject('Like Sku is not found.');
+          }
+        });
       }
-    }
-  },
-  'data.*.max_per_store': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return Number.isInteger(Number(value)) && Number(value) > 0;
-      },
-      errorMessage: 'Max Per Store must be a positive integer greater than zero.'
-    }
-  },
-  'data.*.override_vend_id': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value) {
-          return isVendorExists(value).then(exists => {
-            if (!exists) {
-              return Promise.reject('Override Vendor ID is not found.');
-            }
-          });
-        }
-        return true;
+      return true;
+    }),
+
+  check('*.alloc_method')
+    .isIn(['Target WOS', 'Target Qty', 'Ignore QOH/Target Qty'])
+    .withMessage('Allocation Method is not valid.'),
+
+  check('*.target_value')
+    .custom((value, { req, path }) => {
+      const index = path.match(/\d+/)[0];
+      const alloc_method = req.body[index].alloc_method;
+      const numValue = parseFloat(value);
+      if (alloc_method === 'Target WOS') {
+        return numValue > 0;
+      } else {
+        return Number.isInteger(numValue) && numValue > 0;
       }
-    }
-  },
-  'data.*.limit_to_attached_vendor': {
-    in: ['body'],
-    optional: true,
-    isIn: {
-      options: [['', 'Yes', 'No']],
-      errorMessage: 'Limit to Attached Vendor must be Yes or No.'
-    }
-  },
-  'data.*.hard_qty_limit': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return Number.isInteger(Number(value)) && Number(value) > 0;
-      },
-      errorMessage: 'Hard Qty Limit must be a positive integer greater than zero.'
-    }
-  },
-  'data.*.discounted_cost': {
-    in: ['body'],
-    optional: true,
-    customSanitizer: {
-      options: (value) => value.replace('$', '')
-    },
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return parseFloat(value) > 0;
-      },
-      errorMessage: 'Allocation Cost must be a positive number greater than zero.'
-    }
-  }
-});
+    })
+    .withMessage('"Target WOS/Qty" must be greater than 0. Target Qty (if selected) must be an integer.'),
 
-const customErrorFormatter = ({ msg, path, value, location }) => {
+  check('*.main_sales_method')
+    .isIn(['CY Sold', 'LY Sold', 'Subclass Factor', 'Sku Factor'])
+    .withMessage('Main Sales Method is not valid.'),
 
-  console.log("Error Checking - value: ", value);
-  console.log("Error Checking - msg: ", msg);
-  console.log("Error Checking - path: ", path);
-  console.log("Error Checking - location: ", location);
+  check('*.avg_weekly_sold_per_store')
+    .custom(value => parseFloat(value) > 0)
+    .withMessage('Avg Weekly Sold must be a positive number greater than zero.'),
 
-  const match = path.match(/\d+/);
-  const index = match ? match[0] : null;
+  check('*.eoq')
+    .isInt({ min: 1 })
+    .withMessage('EOQ must be a positive integer greater than zero.'),
 
-  console.log("Error Checking - index: ", index);
+  check('*.override_store_count')
+    .optional()
+    .custom(value => {
+      if (value === '') return true; // Skip validation if the field is empty
+      return Number.isInteger(Number(value)) && Number(value) > 0;
+    })
+    .withMessage('Override Store Count must be a positive integer greater than zero.'),
 
-  return {
-    type: 'field',
-    value,
-    msg,
-    path,
-    location,
-    index: index // Include the index in the error object
-  };
-};
+  check('*.exclude_stores')
+    .optional()
+    .isIn(['', 'Yes', 'No'])
+    .withMessage('Exclude Stores must be Yes or No.'),
+
+  check('*.min_per_store')
+    .optional()
+    .custom((value, { req, path }) => {
+      if (value === '') return true; // Skip validation if the field is empty
+      const index = path.match(/\d+/)[0];
+      const max_per_store = req.body[index].max_per_store;
+      if (max_per_store && value > max_per_store) {
+        throw new Error('Min Per Store must be less than Max Per Store.');
+      }
+      return Number.isInteger(Number(value)) && Number(value) > 0;
+    })
+    .withMessage('Min Per Store must be a positive integer greater than zero.'),
+
+  check('*.max_per_store')
+    .optional()
+    .custom(value => {
+      if (value === '') return true; // Skip validation if the field is empty
+      return Number.isInteger(Number(value)) && Number(value) > 0;
+    })
+    .withMessage('Max Per Store must be a positive integer greater than zero.'),
+
+  check('*.override_vend_id')
+    .optional()
+    .custom(value => {
+      if (value) {
+        return isVendorExists(value).then(exists => {
+          if (!exists) {
+            return Promise.reject('Override Vendor ID is not found.');
+          }
+        });
+      }
+      return true;
+    }),
+
+  check('*.limit_to_attached_vendor')
+    .optional()
+    .isIn(['', 'Yes', 'No'])
+    .withMessage('Limit to Attached Vendor must be Yes or No.'),
+
+  check('*.hard_qty_limit')
+    .optional()
+    .custom(value => {
+      if (value === '') return true; // Skip validation if the field is empty
+      return Number.isInteger(Number(value)) && Number(value) > 0;
+    })
+    .withMessage('Hard Qty Limit must be a positive integer greater than zero.'),
+
+  check('*.discounted_cost')
+    .optional()
+    .customSanitizer(value => value.replace('$', ''))
+    .custom(value => {
+      if (value === '') return true; // Skip validation if the field is empty
+      return parseFloat(value) > 0;
+    })
+    .withMessage('Allocation Cost must be a positive number greater than zero.')
+];
 
 
