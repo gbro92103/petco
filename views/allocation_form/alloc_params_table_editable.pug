@@ -3,19 +3,19 @@ table.table.alloc-params-table
   thead
     tr
       th(title="Please enter the sku number.") SKU Number 
-        span.required *
+        span.required  *
       th Description
       th(title="Enter a like sku only if there is limited sales history for the main sku, otherwise leave blank.") Like SKU
       th(title="Select whether you are using a Target WOS, Target Qty, or a Target Qty that ignores store Qty On Hand information.") Allocation Method
-        span.required *
+        span.required  *
       th(title="Enter either a Target WOS -or- a company-wide Target Qty for the allocation.") Target Qty/WOS
-        span.required *
+        span.required  *
       th(title="Select whether you want to base the allocation off of LY Sales, CY Sales, the Subclass or Sku Factor.") Main Sales Method
-        span.required *  
+        span.required  *  
       th(title="This estimate is used to calculate sales for stores that are assigned the Subclass or Sku Factor method.") Avg Weekly Sold Per Store
-        span.required *
+        span.required  *
       th(title="Please enter an EOQ for the allocation.") EOQ
-        span.required *
+        span.required  *
       th(title="Optional. To limit the allocation to the highest selling stores, enter the number of stores here.") Override Store Count
       th(title="Required if a number of store limit is used. If Exclude Stores is selected, RCAC's will not be able to enter qty for lower selling stores below the specified count")  Exclude Stores  
       th(title="Used to set a minimum per store. The allocation will assign this qty to each store at minimum.  RCAC's will be able to reduce the qty below the minimum.") Min Per Store
@@ -26,7 +26,7 @@ table.table.alloc-params-table
       th(title="This sums the actual qty of the allocation after all settings, including RCAC changes that are made.") Actual Allocation Quantity
       th(title="This is the average cost of the sku.") Average Cost
       th(title="This is the special discounted allocation cost for the sku.") Alloc Cost
-        span.required *
+        span.required  *
       th(title="This is the actual qty X the average cost.  It is the total cost of the allocation used for budgeting purposes.") Total Cost
       th(title="This is the actual number of stores that are participating in the allocation after all sellings and RCAC changes are made.") Actual Number of Stores
       th Action
@@ -85,7 +85,7 @@ table.table.alloc-params-table
           td.read-only(data-name=`allocParams[act_alloc_qty][${index}]`)= allocParam.act_alloc_qty
           td.read-only(data-name=`allocParams[avg_cost][${index}]`)= allocParam.avg_cost
           td
-            input(type="text" name=`allocParams[discounted_cost][${index}]` value=allocParam.sku_alloc_cost required) 
+            input(type="text" name=`allocParams[discounted_cost][${index}]` value=allocParam.discounted_cost required) 
           td.read-only(data-name=`allocParams[total_cost][${index}]`)= allocParam.total_cost
           td.read-only(data-name=`allocParams[act_nbr_of_stores][${index}]`)= allocParam.act_nbr_of_stores
           td

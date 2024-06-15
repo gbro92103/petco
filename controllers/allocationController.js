@@ -159,32 +159,24 @@ exports.save_alloc_params_post = asyncHandler(async (req, res, next) => {
 });
 
 exports.delete_alloc_param_post = asyncHandler(async (req, res, next) => {
-  const paramID = req.params.id;
-  let allocID = 0;
   
   try {
-    const allocParam = await db.alloc_params.findByPk(paramID);
-
-    if (allocParam) {
-      allocID = allocParam.alloc_id;
-    } else {
-      res.redirect("/petco/live-animal/allocations/");
-    }
 
     const result = await db.alloc_params.destroy({
         where: {
-            alloc_param_id: paramID
+            alloc_param_id: req.params.id
         }
     });
 
     if (result) {
-        console.log(`Row with alloc_param_id = ${paramID} was deleted successfully.`);
+        res.status(200).json({ message: `Row was deleted successfully.`});
     } else {
         console.log(`No row found with alloc_param_id = ${paramID}.`);
+        res.status(500).json({ error: 'Allocation parameter not found.' });
     }
-    res.redirect(`/petco/live-animal/allocations/${allocID}/update`)
   } catch (error) {
       console.error('Error deleting row:', error);
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -254,7 +246,7 @@ exports.validateAllocParams = [
     })),
     
   check('*.like_sku')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .custom(value => {
       if (value) {
         return isSkuExists(value).then(exists => {
@@ -288,49 +280,49 @@ exports.validateAllocParams = [
     .withMessage('Main Sales Method is not valid.'),
 
   check('*.avg_weekly_sold_per_store')
-    .custom(value => parseFloat(value) > 0)
-    .withMessage('Avg Weekly Sold must be a positive number greater than zero.'),
+    .notEmpty().withMessage("Avg Weekly sold is required.")
+    .custom(value => {
+      if (!value) return true; // If the value is not present, skip further checks as notEmpty() will handle this case
+      if (parseFloat(value) > 0) return true; // If the value is a positive number greater than zero, validation passes
+      throw new Error('Avg Weekly Sold must be a positive number greater than zero.');
+    }),
 
   check('*.eoq')
     .isInt({ min: 1 })
     .withMessage('EOQ must be a positive integer greater than zero.'),
 
   check('*.override_store_count')
-    .optional()
-    .custom(value => {
-      if (value === '') return true; // Skip validation if the field is empty
-      return Number.isInteger(Number(value)) && Number(value) > 0;
-    })
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
     .withMessage('Override Store Count must be a positive integer greater than zero.'),
 
   check('*.exclude_stores')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isIn(['', 'Yes', 'No'])
     .withMessage('Exclude Stores must be Yes or No.'),
 
   check('*.min_per_store')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 }).withMessage('Min Per Store must be a positive integer greater than zero.')
     .custom((value, { req, path }) => {
-      if (value === '') return true; // Skip validation if the field is empty
+      if (!value) {
+        return true; // Skip the check if value is blank
+      }
       const index = path.match(/\d+/)[0];
       const max_per_store = req.body[index].max_per_store;
-      if (max_per_store && value > max_per_store) {
+      if (max_per_store && parseInt(value) > parseInt(max_per_store)) {
         throw new Error('Min Per Store must be less than Max Per Store.');
       }
-      return Number.isInteger(Number(value)) && Number(value) > 0;
-    })
-    .withMessage('Min Per Store must be a positive integer greater than zero.'),
+      return true;
+    }),
 
   check('*.max_per_store')
-    .optional()
-    .custom(value => {
-      if (value === '') return true; // Skip validation if the field is empty
-      return Number.isInteger(Number(value)) && Number(value) > 0;
-    })
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
     .withMessage('Max Per Store must be a positive integer greater than zero.'),
 
   check('*.override_vend_id')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .custom(value => {
       if (value) {
         return isVendorExists(value).then(exists => {
@@ -343,20 +335,17 @@ exports.validateAllocParams = [
     }),
 
   check('*.limit_to_attached_vendor')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .isIn(['', 'Yes', 'No'])
     .withMessage('Limit to Attached Vendor must be Yes or No.'),
 
   check('*.hard_qty_limit')
-    .optional()
-    .custom(value => {
-      if (value === '') return true; // Skip validation if the field is empty
-      return Number.isInteger(Number(value)) && Number(value) > 0;
-    })
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
     .withMessage('Hard Qty Limit must be a positive integer greater than zero.'),
 
   check('*.discounted_cost')
-    .optional()
+    .optional({ nullable: true, checkFalsy: true })
     .customSanitizer(value => value.replace('$', ''))
     .custom(value => {
       if (value === '') return true; // Skip validation if the field is empty

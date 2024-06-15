@@ -1,50 +1,51 @@
-table.table.alloc-lines-table
-  thead
-    tr
-      th Store Nbr
-      th Store Name
-      th Date Opened
-      th SKU
-      th Description
-      th Sales Method 
-      th SC Factor 
-      th SKU Factor
-      th Last Year Sold
-      th YTD Sold
-      th QOH + QOO
-      th Weeks Of Supply
-      th Allocation Qty
-      th Revised Alloc Qty 
-      th New WOS
-      if (allocation.alloc_status !== 'Setup')
-        th RCAC Name
-      th Notes       
-  tbody
-    each line in allocLines
+if allocLines && allocLines.length > 0
+  table.table.alloc-lines-table
+    thead
       tr
-        td= line.str_nbr
-        td= line.str_name
-        td= line.dt_opened
-        td= line.sku_nbr
-        td= line.desc
-        td
-          select(name=`sales_method_${line.alloc_line_id}`)
-            option(value="LY Sold" selected=line.sales_method==="LY Sold") LY Sold
-            option(value="CY Sold" selected=line.sales_method==="CY Sold") CY Sold
-            option(value="Subclass Factor" selected=line.sales_method==="Subclass Factor") Subclass Factor
-            option(value="Sku Factor" selected=line.sales_method==="Sku Factor") Sku Factor
-        td= line.sc_factor 
-        td= line.sku_factor
-        td= line.ly_sld 
-        td= line.cy_sld 
-        td= line.qoh_plus_qoo 
-        td= line.wos 
-        td
-          input(type="text" name=`alloc_qty_${line.alloc_line_id}}` value=line.alloc_qty)
-        td
-          input(type="text" name=`revised_alloc_qty_${line.alloc_line_id}` value=line.revised_alloc_qty) 
-        td= line.new_wos 
+        th Store Nbr
+        th Store Name
+        th Date Opened
+        th SKU
+        th Description
+        th Sales Method 
+        th SC Factor 
+        th SKU Factor
+        th Last Year Sold
+        th YTD Sold
+        th QOH + QOO
+        th Weeks Of Supply
+        th Allocation Qty
+        th Revised Alloc Qty 
+        th New WOS
         if (allocation.alloc_status !== 'Setup')
-          td= line.rcac_name
-        td
-          input(type="text" name=`notes_${line.alloc_line_id}` value=line.notes)
+          th RCAC Name
+        th Notes       
+    tbody
+      each line in allocLines
+        tr
+          td= line.str_nbr
+          td= line.str_name
+          td= line.dt_opened
+          td= line.sku_nbr
+          td= line.desc
+          td
+            select(name=`sales_method_${line.alloc_line_id}`)
+              option(value="LY Sold" selected=line.sales_method==="LY Sold") LY Sold
+              option(value="CY Sold" selected=line.sales_method==="CY Sold") CY Sold
+              option(value="Subclass Factor" selected=line.sales_method==="Subclass Factor") Subclass Factor
+              option(value="Sku Factor" selected=line.sales_method==="Sku Factor") Sku Factor
+          td= line.sc_factor 
+          td= line.sku_factor
+          td= line.ly_sld 
+          td= line.cy_sld 
+          td= line.qoh_plus_qoo 
+          td= line.wos 
+          td
+            input(type="text" name=`alloc_qty_${line.alloc_line_id}}` value=line.alloc_qty)
+          td
+            input(type="text" name=`revised_alloc_qty_${line.alloc_line_id}` value=line.revised_alloc_qty) 
+          td= line.new_wos 
+          if (allocation.alloc_status !== 'Setup')
+            td= line.rcac_name
+          td
+            input(type="text" name=`notes_${line.alloc_line_id}` value=line.notes)

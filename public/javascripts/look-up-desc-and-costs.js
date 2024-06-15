@@ -19,7 +19,7 @@ function descAndCostLookup(input) {
         // Select the table cells by their data-name attribute
         var descCell = document.querySelector(`td[data-name="allocParams[desc][${rowID}]"]`);
         var avgCostCell = document.querySelector(`td[data-name="allocParams[avg_cost][${rowID}]"]`);
-        var discountCostInput = document.querySelector(`input[name="allocParams[sku_alloc_cost][${rowID}]"]`);
+        var discountCostInput = document.querySelector(`input[name="allocParams[discounted_cost][${rowID}]"]`);
 
         // Send a request to the server
         fetch(`/petco/live-animal/allocations/${skuNbr}/get-desc-and-costs`)
