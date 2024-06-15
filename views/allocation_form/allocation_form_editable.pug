@@ -1,4 +1,3 @@
-
 form.settings-form(method="POST" action=`update/save-alloc-settings`) 
   .allocation-settings
     .form-field
@@ -25,5 +24,3 @@ form.settings-form(method="POST" action=`update/save-alloc-settings`)
         option(value="Sent To Vendor" selected=(allocation.alloc_status === 'Sent To Vendor')) Sent To Vendor
         option(value="Cancelled" selected=(allocation.alloc_status === 'Cancelled')) Cancelled
         option(value="Complete" selected=(allocation.alloc_status === 'Complete')) Complete
-
-

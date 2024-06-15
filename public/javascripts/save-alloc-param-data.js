@@ -1,16 +1,58 @@
 const form1 = document.querySelector(".settings-form")// Submit form 1
 
-document.querySelector(".save").addEventListener("click", function() {
+document.querySelector(".save").addEventListener("click", (event) => handleSave(event));
+
+async function handleSave(event) {
   if (form1) {
     if (form1.checkValidity()) { 
-      extractTableData();
+      event.preventDefault();
+      
+      try {
+        await saveAllocSettings();
+        await extractTableData();
+      }
+      catch (error) {
+        console.error ("Error saving:", error)
+      }
     } else {
       form1.reportValidity(); // Show validation error
     }
   }
-});
+}
 
-function extractTableData() {
+async function saveAllocSettings() {
+  const formData = new FormData(form1);
+  const data = {};
+  formData.forEach((value, key) => {
+    data[key] = value;
+  });
+
+  fetch(form1.action, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    console.log('Success:', data);
+    if (data.error)
+      throw new Error(data.error);
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('An error occurred while saving the allocation settings');
+    throw new Error(error);
+  });
+}
+
+async function extractTableData() {
   let tbody = document.querySelector('.alloc-params-table tbody');
   let rows = tbody.rows; // Get rows from the first tbody
   let data = [];

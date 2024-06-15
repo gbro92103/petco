@@ -113,8 +113,35 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
 });
 
 exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
+  try {
 
+    console.log("made it here to save alloc settings.")
+
+    let allocID = "";
+    if (req.params.id) allocID = req.params.id;
+
+    const allocationData = {
+      alloc_name: req.body.allocationName,
+      alloc_date: req.body.allocationDate,
+      alloc_review_due_date: req.body.allocationReviewDate,
+      alloc_status: req.body.allocationStatus,
+      alloc_id: allocID
+    };
+
+    console.log(allocationData);
+
+    if (allocationData.alloc_id) {
+      await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } });
+    } else {
+      await db.allocations.create(allocationData);
+    }
+
+    res.status(200).json({ message: 'Allocation settings saved successfully' });
+  } catch (error) {
+    res.status(500).json({ error: 'An error occurred while saving the allocation settings' });
+  }
 });
+
 
 exports.save_alloc_params_post = asyncHandler(async (req, res, next) => {
   const transaction = await db.sequelize.transaction();
