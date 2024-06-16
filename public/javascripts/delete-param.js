@@ -7,6 +7,11 @@ deleteButtons.forEach(button => {
 });
 
 function listenForDelete(event) {
+    
+    const result = confirm("Are you sure you want to delete this row?");
+    
+    if (!result) return;
+
     // Get the clicked button
     const clickedButton = event.target;
 

@@ -3,7 +3,7 @@
         "permissions": {
             "canAddAllocations": false,
             "canUpdateAllocations": false,
-            "canReviewAllocations": true,
+            "canReviewAllocations": false,
             "canViewAllocParams": false,
             "canAddAllocParams": false,
             "canUpdateAllocParams": false,
@@ -31,7 +31,7 @@
         "permissions": {
             "canAddAllocations": true,
             "canUpdateAllocations": true,
-            "canReviewAllocations": true,
+            "canReviewAllocations": false,
             "canViewAllocParams": true,
             "canAddAllocParams": true,
             "canUpdateAllocParams": true,
@@ -59,7 +59,7 @@
         "permissions": {
             "canAddAllocations": false,
             "canUpdateAllocations": false,
-            "canReviewAllocations": true,
+            "canReviewAllocations": false,
             "canViewAllocParams": true,
             "canAddAllocParams": false,
             "canUpdateAllocParams": false,
@@ -87,7 +87,7 @@
         "permissions": {
             "canAddAllocations": false,
             "canUpdateAllocations": false,
-            "canReviewAllocations": true,
+            "canReviewAllocations": false,
             "canViewAllocParams": false,
             "canAddAllocParams": false,
             "canUpdateAllocParams": false,

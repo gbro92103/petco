@@ -47,10 +47,13 @@ exports.new_allocation_get = asyncHandler(async (req, res, next) => {
             alloc_status: "Setup"
         };
 
+        const sums = {totalAllocQty: 0, totalAllocCost: "$0.00"};
+
         res.render("main_allocation_template", { 
             title: "Create New Allocation",
             currentPage: "allocations",
             allocation: alloc, 
+            sums: sums,
             user: loggedInUser,
             menuOptions: menuOptions,
             permissions: userPermissions
@@ -115,10 +118,8 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
 exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
   try {
 
-    console.log("made it here to save alloc settings.")
-
     let allocID = "";
-    if (req.params.id) allocID = req.params.id;
+    if (req.params.id !== "new") allocID = req.params.id;
 
     const allocationData = {
       alloc_name: req.body.allocationName,
@@ -128,15 +129,15 @@ exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
       alloc_id: allocID
     };
 
-    console.log(allocationData);
+    let settings;
 
     if (allocationData.alloc_id) {
-      await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } });
+      settings = await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } });
     } else {
-      await db.allocations.create(allocationData);
+      settings = await db.allocations.create(allocationData);
     }
 
-    res.status(200).json({ message: 'Allocation settings saved successfully' });
+    res.status(200).json({ message: 'Allocation settings saved successfully', allocID: settings.alloc_id });
   } catch (error) {
     res.status(500).json({ error: 'An error occurred while saving the allocation settings' });
   }

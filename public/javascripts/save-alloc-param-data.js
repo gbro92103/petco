@@ -1,6 +1,16 @@
 const form1 = document.querySelector(".settings-form")// Submit form 1
 
 document.querySelector(".save").addEventListener("click", (event) => handleSave(event));
+document.getElementById('allocationStatus').addEventListener("change", (event) => handleSave(event));
+
+// Function to get the current value of the field
+function getStatus() {
+    return document.getElementById('allocationStatus').value;
+}
+
+// Store the initial value of the field when the page loads
+const initialStatus = getStatus();
+
 
 async function handleSave(event) {
   if (form1) {
@@ -10,6 +20,10 @@ async function handleSave(event) {
       try {
         await saveAllocSettings();
         await extractTableData();
+        const newStatus = getStatus();
+
+        if (newStatus !== initialStatus)
+          location.reload();
       }
       catch (error) {
         console.error ("Error saving:", error)
@@ -41,7 +55,6 @@ async function saveAllocSettings() {
     return response.json();
   })
   .then(data => {
-    console.log('Success:', data);
     if (data.error)
       throw new Error(data.error);
   })
@@ -91,9 +104,11 @@ async function extractTableData() {
 
     data.push(rowData);
   }
+
+  const allocID = getAllocID();
   
   // Send data to server
-  fetch(`/petco/live-animal/allocations/1/update/save-alloc-params/`, {
+  fetch(`/petco/live-animal/allocations/${allocID}/update/save-alloc-params/`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -109,15 +124,16 @@ async function extractTableData() {
   .then(data => {
     if (data.errors) {
       displayErrors(data.errors)
+      throw new Error('Validation errors found.');
     }
     else {
       const ulElement = document.querySelector('.errors-list'); 
       ulElement.innerHTML = '';
-      console.log('Success:', data)
     }
   })
   .catch((error) => {
     console.error('Error:', error);
+    throw new Error(error);
   })
 }
 
@@ -134,4 +150,23 @@ function displayErrors(errors) {
     listItem.textContent = errorMessage;
     ulElement.appendChild(listItem);
   });
+}
+
+function getAllocID() {
+  const pathname = window.location.pathname;
+
+  // Split the pathname by '/'
+  const segments = pathname.split('/');
+
+  //check for a new allocation
+  const newCheck = segments.indexOf('create');
+
+  if (newCheck !== -1)
+    return "new";
+
+  // Find the index of 'allocations'
+  const allocationsIndex = segments.indexOf('allocations');
+
+  // The allocation ID will be the next segment after 'allocations'
+  return segments[allocationsIndex + 1];
 }

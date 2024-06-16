@@ -7,7 +7,6 @@ block content
     .form-container
       if !permissions.canViewAllocParams
         //- Nothing is rendered if the user cannot view allocation parameters
-
       else if permissions.canUpdateAllocParams && allocation.alloc_status === 'Setup'
         include allocation_form/allocation_form_editable
         include allocation_form/buttons
@@ -17,16 +16,16 @@ block content
         include allocation_form/buttons
         include allocation_form/alloc_params_table_readonly
         
-    if user.user_type === 'InventoryMgmt'
-      if !(allocation.alloc_status === 'Complete' || allocation.alloc_status === 'Cancelled')
-        include allocation_form/alloc_lines_table_invmgt_editable
-      else
-        include allocation_form/alloc_lines_table_invmgt_readonly
-    else 
-      if allocation.alloc_status === 'RCAC Review'
-        include allocation_form/alloc_lines_table_rcac_editable
-      else
-        include allocation_form/alloc_lines_table_rcac_readonly
+      if user.user_type === 'InventoryMgmt'
+        if !(allocation.alloc_status === 'Complete' || allocation.alloc_status === 'Cancelled')
+          include allocation_form/alloc_lines_table_invmgt_editable
+        else
+          include allocation_form/alloc_lines_table_invmgt_readonly
+      else 
+        if allocation.alloc_status === 'RCAC Review'
+          include allocation_form/alloc_lines_table_rcac_editable
+        else
+          include allocation_form/alloc_lines_table_rcac_readonly
 
   script(src='/javascripts/look-up-desc-and-costs.js')
   script(src='/javascripts/add-new-line.js')
