@@ -283,8 +283,14 @@ h1 {
   color: #004A96;
 }
 
-.table.alloc-params-table {
+.table.alloc-params-table 
+.table.alloc-lines-table {
   width: 100% !important;
+}
+
+ th,
+ td {
+  width: auto;
 }
 
 .table.alloc-params-table th,

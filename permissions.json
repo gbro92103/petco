@@ -3,7 +3,7 @@
         "permissions": {
             "canAddAllocations": false,
             "canUpdateAllocations": false,
-            "canReviewAllocations": true,
+            "canReviewAllocations": false,
             "canViewAllocParams": false,
             "canAddAllocParams": false,
             "canUpdateAllocParams": false,
@@ -13,6 +13,7 @@
             "canUpdateUsers": true,
             "canViewRcacReviews": true,
             "canViewRcacNotes": true,
+            "canViewBudgetTotals": false,
             "canResolveRcacNotes": true,
             "canViewVendorBreakouts": true
         },
@@ -22,6 +23,7 @@
             "rcacReviews": true,
             "rcacNotes": true,
             "vendorBreakouts": true,
+            "budgetTotals": false,
             "changePassword": true
         }
     },
@@ -29,7 +31,7 @@
         "permissions": {
             "canAddAllocations": true,
             "canUpdateAllocations": true,
-            "canReviewAllocations": true,
+            "canReviewAllocations": false,
             "canViewAllocParams": true,
             "canAddAllocParams": true,
             "canUpdateAllocParams": true,
@@ -39,6 +41,7 @@
             "canUpdateUsers": true,
             "canViewRcacReviews": true,
             "canViewRcacNotes": true,
+            "canViewBudgetTotals": true,
             "canResolveRcacNotes": true,
             "canViewVendorBreakouts": true
         },
@@ -48,6 +51,7 @@
             "rcacReviews": true,
             "rcacNotes": true,
             "vendorBreakouts": true,
+            "budgetTotals": true,
             "changePassword": true
         }
     },
@@ -55,7 +59,7 @@
         "permissions": {
             "canAddAllocations": false,
             "canUpdateAllocations": false,
-            "canReviewAllocations": true,
+            "canReviewAllocations": false,
             "canViewAllocParams": true,
             "canAddAllocParams": false,
             "canUpdateAllocParams": false,
@@ -66,6 +70,7 @@
             "canViewRcacReviews": true,
             "canViewRcacNotes": true,
             "canResolveRcacNotes": false,
+            "canViewBudgetTotals": true,
             "canViewVendorBreakouts": true
         },
         "menu": {
@@ -74,6 +79,7 @@
             "rcacReviews": true,
             "rcacNotes": true,
             "vendorBreakouts": true,
+            "budgetTotals": true,
             "changePassword": true
         }
     },
@@ -81,7 +87,7 @@
         "permissions": {
             "canAddAllocations": false,
             "canUpdateAllocations": false,
-            "canReviewAllocations": true,
+            "canReviewAllocations": false,
             "canViewAllocParams": false,
             "canAddAllocParams": false,
             "canUpdateAllocParams": false,
@@ -92,6 +98,7 @@
             "canViewRcacReviews": true,
             "canViewRcacNotes": true,
             "canResolveRcacNotes": false,
+            "canViewBudgetTotals": true,
             "canViewVendorBreakouts": true
         },
         "menu": {
@@ -100,6 +107,7 @@
             "rcacReviews": true,
             "rcacNotes": true,
             "vendorBreakouts": true,
+            "budgetTotals": true,
             "changePassword": true
         }
     },
@@ -118,6 +126,7 @@
             "canViewRcacReviews": false,
             "canViewRcacNotes": false,
             "canResolveRcacNotes": false,
+            "canViewBudgetTotals": false,
             "canViewVendorBreakouts": false
         },
         "menu": {
@@ -126,6 +135,7 @@
             "rcacReviews": false,
             "rcacNotes": false,
             "vendorBreakouts":false,
+            "budgetTotals": false,
             "changePassword": true          
         }
     }

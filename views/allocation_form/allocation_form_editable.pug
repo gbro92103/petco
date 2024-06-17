@@ -1,6 +1,6 @@
-
 form.settings-form(method="POST" action=`update/save-alloc-settings`) 
   .allocation-settings
+    input(hidden type="text" id="allocationID" name="allocationID" value=allocation.alloc_id) 
     .form-field
       label(for="allocationName") Allocation Name:
         span.required *
@@ -9,7 +9,7 @@ form.settings-form(method="POST" action=`update/save-alloc-settings`)
     .form-field
       label(for="allocationDate") Allocation Date:
         span.required *
-      input(type="date" id="allocationDate" name="allocationDate" value=allocation.alloc_date required)
+      input(type="date" id="allocationDate" name="allocationDate" value=allocation.alloc_date required readonly=(allocation.alloc_id ? true : false))
 
     .form-field
       label(for="allocationReviewDate") Review Due Date:
@@ -25,5 +25,3 @@ form.settings-form(method="POST" action=`update/save-alloc-settings`)
         option(value="Sent To Vendor" selected=(allocation.alloc_status === 'Sent To Vendor')) Sent To Vendor
         option(value="Cancelled" selected=(allocation.alloc_status === 'Cancelled')) Cancelled
         option(value="Complete" selected=(allocation.alloc_status === 'Complete')) Complete
-
-

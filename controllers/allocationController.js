@@ -1,7 +1,8 @@
 const asyncHandler = require("express-async-handler");
 const db = require('../config/db');
 const permissions = require('../controllers/permissionsController');
-const { checkSchema, validationResult } = require('express-validator');
+const { check, body, validationResult } = require('express-validator');
+const moment = require('moment');
 
 // Display list of all allocations.
 exports.allocations_list_get = asyncHandler(async (req, res, next) => {
@@ -42,15 +43,19 @@ exports.new_allocation_get = asyncHandler(async (req, res, next) => {
     
         //set default values
         const alloc = {
+            alloc_id: "",
             alloc_date: allocDate.toISOString().split('T')[0],
             alloc_review_due_date: reviewDate.toISOString().split('T')[0],
             alloc_status: "Setup"
         };
 
+        const sums = {totalAllocQty: 0, totalAllocCost: "$0.00"};
+
         res.render("main_allocation_template", { 
             title: "Create New Allocation",
             currentPage: "allocations",
             allocation: alloc, 
+            sums: sums,
             user: loggedInUser,
             menuOptions: menuOptions,
             permissions: userPermissions
@@ -58,11 +63,6 @@ exports.new_allocation_get = asyncHandler(async (req, res, next) => {
     } catch (error) {
         console.error("Error:", error.message);
     }
-});
-
-//new allocation POST 
-exports.new_allocation_post = asyncHandler(async (req, res, next) => {
-    res.send("NOT IMPLEMENTED: new allocation post");
 });
 
 //update allocation GET
@@ -94,15 +94,6 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
         });
 
         const sums = {totalAllocCost: "$0.00", totalAllocQty: 0};
-
-        console.log(req.session.errors)
-        let errors = [];
-
-        if (req.session.errors) {
-          errors = req.session.errors;
-          params = req.session.formData.data;
-          console.log("Here is the form data that is being used: ", req.session.formData);
-        }
           
         res.render("main_allocation_template", { 
           title: "Update Allocation",
@@ -111,7 +102,6 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
           allocParams: params,
           allocLines: lines, 
           sums: sums,
-          errors: errors,
           user: loggedInUser,
           menuOptions: menuOptions,
           permissions: userPermissions
@@ -122,87 +112,105 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
     }
 });
 
-exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
-
-});
-
-exports.save_alloc_params_post = asyncHandler(async (req, res, next) => {
-
+exports.save_allocation_post = asyncHandler(async (req, res, next) => {
+  const transaction = await db.sequelize.transaction();
   try {
-    const errors = validationResult(req).formatWith(customErrorFormatter);
-    req.session.errors = errors.array();
-    req.session.formData = req.body;
-    
+    console.log(req.body.allocSettings);
+
+    const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
-      console.log('Discovered errors:', errors);
-      res.redirect(`/petco/live-animal/allocations/${req.params.id}/update`)
-      return;
+      const uniqueErrorMessages = [...new Set(errors.array().map(error => error.msg))];
+      console.log('Discovered errors:', uniqueErrorMessages);
+      return res.status(400).json({ errors: uniqueErrorMessages });
     }
-    // Process the valid data 
-    const data = req.body.data;
 
-    for (const key in data) {
-      if (data.hasOwnProperty(key)) {
-        // Copy the data object to avoid modifying the original data
-        const param = { ...data[key], alloc_id: req.params.id };
-    
-        // Remove the row_index field
-        delete param.row_index;
+    const record = await saveAllocationSettings(req, transaction);
+    await saveAllocationParams(req, transaction, record);
 
-        //check to resolve foreign key constraint errors
-        if (!param.like_sku)
-            param.like_sku = null;
-
-        if (!param.override_vend_id)
-            param.override_vend_id = null;
-
-        //save to database
-        if (param.alloc_param_id) {
-    
-            await db.alloc_params.update(
-                param,
-                {where: { alloc_param_id: param.alloc_param_id }}
-            );
-        } else {
-            param.alloc_param_id = null;
-            await db.alloc_params.create(param);
-        }
-      }
-    }
-  res.redirect(`/petco/live-animal/allocations/${req.params.id}/update`)
+    await transaction.commit();
+    res.status(200).json({ message: 'Allocation saved successfully' });
+  
   } catch (error) {
-      console.error('Error saving allocation parameters:', error);
-      res.status(500).send('Internal Server Error');
+    await transaction.rollback();
+    console.error(error);
+    res.status(500).json({ message: 'An error occurred while saving the allocation.' });
   }
 });
 
+async function saveAllocationSettings(req, transaction) {
+  try {
+    const alloc = req.body.allocSettings;
+    const allocationData = {
+      alloc_name: alloc.allocationName,
+      alloc_date: alloc.allocationDate,
+      alloc_review_due_date: alloc.allocationReviewDate,
+      alloc_status: alloc.allocationStatus,
+      alloc_id: alloc.allocationID || null
+    };
+
+    let record;
+
+    if (allocationData.alloc_id) {
+      await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } , transaction });
+      record = await db.allocations.findOne({ where: { alloc_id: allocationData.alloc_id } });
+    } else {
+     record = await db.allocations.create(allocationData, transaction );
+    }
+
+    return record;
+
+  } catch (error) {
+    console.error("Error saving allocation settings: ", error);
+    throw error;
+  }
+}
+
+async function saveAllocationParams(req, transaction, allocRecord) {
+  try {
+    const tableData = req.body.allocParams;
+
+    for (const key in tableData) {
+      if (tableData.hasOwnProperty(key)) {
+        const param = { ...tableData[key], alloc_id: allocRecord.alloc_id };
+
+        if (!param.like_sku) param.like_sku = null;
+        if (!param.override_vend_id) param.override_vend_id = null;
+
+        if (param.alloc_param_id) {
+          await db.alloc_params.update(param, { where: { alloc_param_id: param.alloc_param_id }, transaction });
+        } else {
+          param.alloc_param_id = null;
+          await db.alloc_params.create(param, { transaction });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error saving allocation params:', error);
+    throw error;
+  }
+
+}
+
 exports.delete_alloc_param_post = asyncHandler(async (req, res, next) => {
-  const paramID = req.params.id;
-  let allocID = 0;
   
   try {
-    const allocParam = await db.alloc_params.findByPk(paramID);
-
-    if (allocParam) {
-      allocID = allocParam.alloc_id;
-    } else {
-      res.redirect("/petco/live-animal/allocations/");
-    }
 
     const result = await db.alloc_params.destroy({
         where: {
-            alloc_param_id: paramID
+            alloc_param_id: req.params.id
         }
     });
 
     if (result) {
-        console.log(`Row with alloc_param_id = ${paramID} was deleted successfully.`);
+        res.status(200).json({ message: `Row was deleted successfully.`});
     } else {
         console.log(`No row found with alloc_param_id = ${paramID}.`);
+        res.status(500).json({ error: 'Allocation parameter not found.' });
     }
-    res.redirect(`/petco/live-animal/allocations/${allocID}/update`)
   } catch (error) {
       console.error('Error deleting row:', error);
+      res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -233,29 +241,6 @@ exports.save_alloc_line_post = asyncHandler(async (req, res, next) => {
 
 });
 
-// Middleware to normalize allocParams
-exports.preprocessAllocParams = (req, res, next) => {
-  if (req.body.allocParams) {
-    req.body.data = normalizeAllocParams(req.body.allocParams);
-  }
-  next();
-};
-
-// Function to normalize allocParams
-function normalizeAllocParams(allocParams) {
-  const data = [];
-  const rowCount = allocParams.row_index.length;
-  for (let i = 0; i < rowCount; i++) {
-    const item = {};
-    for (const key in allocParams) {
-      if (allocParams.hasOwnProperty(key)) {
-        item[key] = allocParams[key][i];
-      }
-    }
-    data.push(item);
-  }
-  return data;
-}
 
 async function isSkuExists(sku_nbr) {
   try {
@@ -285,204 +270,148 @@ async function isVendorExists(vend_id) {
   }
 }
 
-exports.validateAllocParams = checkSchema({
-  'data.*.sku_nbr': {
-    in: ['body'],
-    notEmpty: {
-      errorMessage: 'sku is required.'
-    },
-    custom: {
-      options: (value) => isSkuExists(value).then(exists => {
-        if (!exists) {
-          return Promise.reject('Sku Number is not found.');
-        }
-      })
-    }
-  },
-  'data.*.like_sku': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value) {
-          return isSkuExists(value).then(exists => {
-            if (!exists) {
-              return Promise.reject('Like Sku is not found.');
-            }
-          });
-        }
-        return true;
+exports.validateAllocSettings = [
+  body('allocSettings.allocationName')
+    .notEmpty()
+    .withMessage('Allocation Name cannot be blank.'),
+
+  body('allocSettings.allocationDate')
+    .notEmpty()
+    .withMessage('Allocation Date cannot be blank.')
+    .isDate()
+    .withMessage('Allocation Date must be a valid date.'),
+
+  body('allocSettings.allocationReviewDate')
+    .notEmpty()
+    .withMessage('Review Due Date cannot be blank.')
+    .isDate()
+    .withMessage('Review Due Date must be a valid date.')
+    .custom((value) => {
+      if (moment(value).isBefore(moment(), 'day')) {
+        throw new Error('Review Due Date cannot be before today.');
       }
-    }
-  },
-  'data.*.alloc_method': {
-    in: ['body'],
-    isIn: {
-      options: [['Target WOS', 'Target Qty', 'Ignore QOH/Target Qty']],
-      errorMessage: 'Allocation Method is not valid.'
-    }
-  },
-  'data.*.target_value': {
-    in: ['body'],
-    custom: {
-      options: (value, { req, path }) => {
-        const index = path.match(/\d+/)[0];
-        const alloc_method = req.body.data[index].alloc_method;
-        const numValue = parseFloat(value);
-        if (alloc_method === 'Target WOS') {
-          return numValue > 0;
-        } else {
-          return Number.isInteger(numValue) && numValue > 0;
-        }
-      },
-      errorMessage: '"Target WOS/Qty" must be greater than 0. Target Qty (if selected) must be an integer.'
-    }
-  },
-  'data.*.main_sales_method': {
-    in: ['body'],
-    isIn: {
-      options: [['CY Sold', 'LY Sold', 'Subclass Factor', 'Sku Factor']],
-      errorMessage: 'Main Sales Method is not valid.'
-    }
-  },
-  'data.*.avg_weekly_sold_per_store': {
-    in: ['body'],  
-    custom: {
-      options: (value) => {
-        return parseFloat(value) > 0;
-      },
-      errorMessage: 'Avg Weekly Sold must be a positive number greater than zero.'
-    }
-  },
-  'data.*.eoq': {
-    in: ['body'],
-    isInt: {
-      options: { min: 1 },
-      errorMessage: 'EOQ must be a positive integer greater than zero.'
-    }
-  },
-  'data.*.override_store_count': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return Number.isInteger(Number(value)) && Number(value) > 0;
-      },
-      errorMessage: 'Override Store Count must be a positive integer greater than zero.'
-    }
-  },
-  'data.*.exclude_stores': {
-    in: ['body'],
-    optional: true,
-    isIn: {
-      options: [['', 'Yes', 'No']],
-      errorMessage: 'Exclude Stores must be Yes or No.'
-    }
-  },
-  'data.*.min_per_store': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return Number.isInteger(Number(value)) && Number(value) > 0;
-      },
-      errorMessage: 'Min Per Store must be a positive integer greater than zero.'
-    },
-    custom: {
-      options: (value, { req, path }) => {
-        const index = path.match(/\d+/)[0];
-        const max_per_store = req.body.data[index].max_per_store;
-        if (max_per_store && value > max_per_store) {
-          throw new Error('Min Per Store must be less than Max Per Store.');
-        }
-        return true;
+      return true;
+    }),
+
+  body('allocSettings.allocationStatus')
+    .notEmpty()
+    .withMessage('Allocation Status cannot be blank')
+    .isIn(['Setup', 'RCAC Review', 'Sent To Vendor', 'Cancelled', 'Complete'])
+    .withMessage('Allocation Status must be one of the select options.')
+];
+
+exports.validateAllocParams = [
+  check('allocParams.*.sku_nbr')
+    .notEmpty().withMessage('sku is required.')
+    .custom(value => isSkuExists(value).then(exists => {
+      if (!exists) {
+        return Promise.reject('Sku Number is not found.');
       }
-    }
-  },
-  'data.*.max_per_store': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return Number.isInteger(Number(value)) && Number(value) > 0;
-      },
-      errorMessage: 'Max Per Store must be a positive integer greater than zero.'
-    }
-  },
-  'data.*.override_vend_id': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value) {
-          return isVendorExists(value).then(exists => {
-            if (!exists) {
-              return Promise.reject('Override Vendor ID is not found.');
-            }
-          });
-        }
-        return true;
+    })),
+    
+  check('allocParams.*.like_sku')
+    .optional({ nullable: true, checkFalsy: true })
+    .custom(value => {
+      if (value) {
+        return isSkuExists(value).then(exists => {
+          if (!exists) {
+            return Promise.reject('Like Sku is not found.');
+          }
+        });
       }
-    }
-  },
-  'data.*.limit_to_attached_vendor': {
-    in: ['body'],
-    optional: true,
-    isIn: {
-      options: [['', 'Yes', 'No']],
-      errorMessage: 'Limit to Attached Vendor must be Yes or No.'
-    }
-  },
-  'data.*.hard_qty_limit': {
-    in: ['body'],
-    optional: true,
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return Number.isInteger(Number(value)) && Number(value) > 0;
-      },
-      errorMessage: 'Hard Qty Limit must be a positive integer greater than zero.'
-    }
-  },
-  'data.*.discounted_cost': {
-    in: ['body'],
-    optional: true,
-    customSanitizer: {
-      options: (value) => value.replace('$', '')
-    },
-    custom: {
-      options: (value) => {
-        if (value === '') return true; // Skip validation if the field is empty
-        return parseFloat(value) > 0;
-      },
-      errorMessage: 'Allocation Cost must be a positive number greater than zero.'
-    }
-  }
-});
+      return true;
+    }),
 
-const customErrorFormatter = ({ msg, path, value, location }) => {
+  check('allocParams.*.alloc_method')
+    .isIn(['Target WOS', 'Target Qty', 'Ignore QOH/Target Qty'])
+    .withMessage('Allocation Method is not valid.'),
 
-  console.log("Error Checking - value: ", value);
-  console.log("Error Checking - msg: ", msg);
-  console.log("Error Checking - path: ", path);
-  console.log("Error Checking - location: ", location);
+  check('allocParams.*.target_value')
+    .custom((value, { req, path }) => {
+      const index = path.match(/\d+/)[0];
+      const alloc_method = req.body.allocParams[index].alloc_method;
+      const numValue = parseFloat(value);
+      if (alloc_method === 'Target WOS') {
+        return numValue > 0;
+      } else {
+        return Number.isInteger(numValue) && numValue > 0;
+      }
+    })
+    .withMessage('"Target WOS/Qty" must be greater than 0. Target Qty (if selected) must be an integer.'),
 
-  const match = path.match(/\d+/);
-  const index = match ? match[0] : null;
+  check('allocParams.*.main_sales_method')
+    .isIn(['CY Sold', 'LY Sold', 'Subclass Factor', 'Sku Factor'])
+    .withMessage('Main Sales Method is not valid.'),
 
-  console.log("Error Checking - index: ", index);
+  check('allocParams.*.avg_weekly_sold_per_store')
+    .notEmpty().withMessage("Avg Weekly sold is required.")
+    .custom(value => {
+      if (!value) return true; // If the value is not present, skip further checks as notEmpty() will handle this case
+      if (parseFloat(value) > 0) return true; // If the value is a positive number greater than zero, validation passes
+      throw new Error('Avg Weekly Sold must be a positive number greater than zero.');
+    }),
 
-  return {
-    type: 'field',
-    value,
-    msg,
-    path,
-    location,
-    index: index // Include the index in the error object
-  };
-};
+  check('allocParams.*.eoq')
+    .isInt({ min: 1 })
+    .withMessage('EOQ must be a positive integer greater than zero.'),
+
+  check('allocParams.*.override_store_count')
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage('Override Store Count must be a positive integer greater than zero.'),
+
+  check('allocParams.*.exclude_stores')
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn(['', 'Yes', 'No'])
+    .withMessage('Exclude Stores must be Yes or No.'),
+
+  check('allocParams.*.min_per_store')
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 }).withMessage('Min Per Store must be a positive integer greater than zero.')
+    .custom((value, { req, path }) => {
+      if (!value) {
+        return true; // Skip the check if value is blank
+      }
+      const index = path.match(/\d+/)[0];
+      const max_per_store = req.body.allocParams[index].max_per_store;
+      if (max_per_store && parseInt(value) > parseInt(max_per_store)) {
+        throw new Error('Min Per Store must be less than Max Per Store.');
+      }
+      return true;
+    }),
+
+  check('allocParams.*.max_per_store')
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage('Max Per Store must be a positive integer greater than zero.'),
+
+  check('allocParams.*.override_vend_id')
+    .optional({ nullable: true, checkFalsy: true })
+    .custom(value => {
+      if (value) {
+        return isVendorExists(value).then(exists => {
+          if (!exists) {
+            return Promise.reject('Override Vendor ID is not found.');
+          }
+        });
+      }
+      return true;
+    }),
+
+  check('allocParams.*.limit_to_attached_vendor')
+    .optional({ nullable: true, checkFalsy: true })
+    .isIn(['', 'Yes', 'No'])
+    .withMessage('Limit to Attached Vendor must be Yes or No.'),
+
+  check('allocParams.*.hard_qty_limit')
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1 })
+    .withMessage('Hard Qty Limit must be a positive integer greater than zero.'),
+
+  check('allocParams.*.discounted_cost')
+    .customSanitizer(value => value.replace('$', ''))
+    .isFloat({ gt: 0 })
+    .withMessage('Allocation Cost must be a positive number greater than zero.')
+];
 
 

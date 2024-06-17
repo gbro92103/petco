@@ -25,15 +25,13 @@ router.get("/vendor-qty-breakouts/", requireLogin, requirePermission("canViewVen
 
 /*Allocation Routes*/
 router.get("/create/", requireLogin, requirePermission("canAddAllocations"), allocation_controller.new_allocation_get);
-router.post("/create/", requireLogin, requirePermission("canAddAllocations"), allocation_controller.new_allocation_post);
 router.get("/:id/update/", requireLogin, allocation_controller.update_allocation_get);
 
-/*save alloc params */
-router.post("/:id/update/save-alloc-settings/", requireLogin, requirePermission("canUpdateAllocations"), allocation_controller.save_alloc_settings_post);
-router.post("/:id/update/save-alloc-params/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_controller.preprocessAllocParams, allocation_controller.validateAllocParams, allocation_controller.save_alloc_params_post);
+/*save alloc settings and params */
+router.post("/submit-allocation/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_controller.validateAllocSettings, allocation_controller.validateAllocParams, allocation_controller.save_allocation_post);
 
 /*save alloc lines*/
-router.post("/:id/update/save-alloc-line/", requireLogin, requirePermission("canReviewAllocations"), allocation_controller.save_alloc_line_post);
+router.post("/:id/save-alloc-line/", requireLogin, requirePermission("canReviewAllocations"), allocation_controller.save_alloc_line_post);
 
 /*update desc and costs when sku number is changed in alloc params table */
 router.get("/:skuNbr/get-desc-and-costs/", requireLogin, requirePermission("canUpdateAllocations"), allocation_controller.update_desc_and_costs_post);

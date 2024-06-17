@@ -1,8 +1,6 @@
 const newLineButton = document.querySelector('.add-new-param');
 const allocParamTable = document.querySelector('.alloc-params-table tbody');
 
-console.log("this is a test.")
-console.log("this is a test#2.")
 
 if (newLineButton) {
     newLineButton.addEventListener("click", adjustNewRowPosition);
@@ -43,7 +41,7 @@ if (newLineButton) {
             { type: 'input', name: 'hard_qty_limit' },
             { type: 'field', name: 'act_alloc_qty' },
             { type: 'field', name: 'avg_cost' },
-            { type: 'input', name: 'sku_alloc_cost' },
+            { type: 'input', name: 'discounted_cost' },
             { type: 'field', name: 'total_cost' },
             { type: 'field', name: 'act_nbr_of_stores' } 
         ];
@@ -102,17 +100,6 @@ function addNewRow(columns, tableBody, index) {
     td.appendChild(delButton);
     newRow.appendChild(td);
     
-    //label row with the row index in a hidden field
-    const rowIdTd = document.createElement('td');
-    rowIdTd.setAttribute('hidden', '');
-    const rowIdInput = document.createElement('input')
-    rowIdInput.setAttribute('name', `allocParams[row_index][${index}]`);
-    rowIdInput.setAttribute('type', 'hidden');
-    rowIdInput.setAttribute('value', index);
-
-    rowIdTd.appendChild(rowIdInput);
-    newRow.appendChild(rowIdTd);
-
     //label row with blank alloc_param_id (since it is new) in a hidden field
     const paramTd = document.createElement('td');
     paramTd.setAttribute('hidden', '');

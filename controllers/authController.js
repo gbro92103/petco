@@ -1,6 +1,7 @@
 asyncHandler = require("express-async-handler");
 const db = require('../config/db');
 const bcrypt = require('bcrypt');
+const permissions = require('../controllers/permissionsController');
 
 // Render the login page GET
 exports.login_page_get = asyncHandler(async (req, res, next) => {
