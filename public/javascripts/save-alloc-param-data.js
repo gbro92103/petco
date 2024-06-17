@@ -3,6 +3,7 @@ const form1 = document.querySelector(".settings-form")// Submit form 1
 document.querySelector(".save").addEventListener("click", (event) => handleSave(event));
 document.getElementById('allocationStatus').addEventListener("change", (event) => handleSave(event));
 
+
 // Function to get the current value of the field
 function getStatus() {
     return document.getElementById('allocationStatus').value;
@@ -41,7 +42,7 @@ async function saveAllocSettings() {
     data[key] = value;
   });
 
-  fetch(form1.action, {
+  fetch('/petco/live-animal/allocations/save-alloc-settings', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -57,6 +58,10 @@ async function saveAllocSettings() {
   .then(data => {
     if (data.error)
       throw new Error(data.error);
+    else {
+      document.getElementById("allocationID").value = data.allocID;
+      console.log("New alloc id saved and passed to form: ", data.allocID);
+    }
   })
   .catch(error => {
     console.error('Error:', error);
@@ -105,10 +110,12 @@ async function extractTableData() {
     data.push(rowData);
   }
 
-  const allocID = getAllocID();
+  const allocID = document.getElementById("allocationID").value;
+
+
   
   // Send data to server
-  fetch(`/petco/live-animal/allocations/${allocID}/update/save-alloc-params/`, {
+  fetch(`/petco/live-animal/allocations/${allocID}/save-alloc-params`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -152,21 +159,3 @@ function displayErrors(errors) {
   });
 }
 
-function getAllocID() {
-  const pathname = window.location.pathname;
-
-  // Split the pathname by '/'
-  const segments = pathname.split('/');
-
-  //check for a new allocation
-  const newCheck = segments.indexOf('create');
-
-  if (newCheck !== -1)
-    return "new";
-
-  // Find the index of 'allocations'
-  const allocationsIndex = segments.indexOf('allocations');
-
-  // The allocation ID will be the next segment after 'allocations'
-  return segments[allocationsIndex + 1];
-}

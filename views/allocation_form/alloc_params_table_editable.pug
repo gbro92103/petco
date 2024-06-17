@@ -33,11 +33,7 @@ table.table.alloc-params-table
   tbody
     if allocParams && allocParams.length > 0
       each allocParam, index in allocParams
-        tr(data-row-key= index)
-          td(hidden)
-            input(type="hidden" name=`allocParams[row_index][${index}]` value=index required)
-          td(hidden)
-            input(type="hidden" name=`allocParams[alloc_id][${index}]` value=allocParam.alloc_id required)  
+        tr(data-row-key= index) 
           td(hidden)
             input(type="hidden" name=`allocParams[alloc_param_id][${index}]` value=allocParam.alloc_param_id required)
           td

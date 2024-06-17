@@ -1,5 +1,6 @@
 form.settings-form(method="POST" action=`update/save-alloc-settings`) 
   .allocation-settings
+    input(hidden type="text" id="allocationID" name="allocationID" value=allocation.alloc_id) 
     .form-field
       label(for="allocationName") Allocation Name:
         span.required *

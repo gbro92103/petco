@@ -100,17 +100,6 @@ function addNewRow(columns, tableBody, index) {
     td.appendChild(delButton);
     newRow.appendChild(td);
     
-    //label row with the row index in a hidden field
-    const rowIdTd = document.createElement('td');
-    rowIdTd.setAttribute('hidden', '');
-    const rowIdInput = document.createElement('input')
-    rowIdInput.setAttribute('name', `allocParams[row_index][${index}]`);
-    rowIdInput.setAttribute('type', 'hidden');
-    rowIdInput.setAttribute('value', index);
-
-    rowIdTd.appendChild(rowIdInput);
-    newRow.appendChild(rowIdTd);
-
     //label row with blank alloc_param_id (since it is new) in a hidden field
     const paramTd = document.createElement('td');
     paramTd.setAttribute('hidden', '');

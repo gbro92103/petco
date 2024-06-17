@@ -42,6 +42,7 @@ exports.new_allocation_get = asyncHandler(async (req, res, next) => {
     
         //set default values
         const alloc = {
+            alloc_id: "",
             alloc_date: allocDate.toISOString().split('T')[0],
             alloc_review_due_date: reviewDate.toISOString().split('T')[0],
             alloc_status: "Setup"
@@ -61,11 +62,6 @@ exports.new_allocation_get = asyncHandler(async (req, res, next) => {
     } catch (error) {
         console.error("Error:", error.message);
     }
-});
-
-//new allocation POST 
-exports.new_allocation_post = asyncHandler(async (req, res, next) => {
-    res.send("NOT IMPLEMENTED: new allocation post");
 });
 
 //update allocation GET
@@ -117,17 +113,15 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
 
 exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
   try {
-
-    let allocID = "";
-    if (req.params.id !== "new") allocID = req.params.id;
-
     const allocationData = {
       alloc_name: req.body.allocationName,
       alloc_date: req.body.allocationDate,
       alloc_review_due_date: req.body.allocationReviewDate,
       alloc_status: req.body.allocationStatus,
-      alloc_id: allocID
+      alloc_id: req.body.allocationID || null
     };
+
+    console.log("alloc data that made it to the server: ", allocationData);
 
     let settings;
 
@@ -139,6 +133,7 @@ exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
 
     res.status(200).json({ message: 'Allocation settings saved successfully', allocID: settings.alloc_id });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'An error occurred while saving the allocation settings' });
   }
 });
@@ -163,7 +158,6 @@ exports.save_alloc_params_post = asyncHandler(async (req, res, next) => {
     for (const key in tableData) {
       if (tableData.hasOwnProperty(key)) {
         const param = { ...tableData[key], alloc_id: req.params.id };
-        delete param.row_index;
 
         if (!param.like_sku) param.like_sku = null;
         if (!param.override_vend_id) param.override_vend_id = null;
