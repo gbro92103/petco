@@ -19,8 +19,11 @@ async function handleSave(event) {
       event.preventDefault();
       
       try {
-        await saveAllocSettings();
-        await extractTableData();
+        const allocSettings = saveAllocSettings();
+        const allocParams = extractTableData();
+        const data = {allocSettings, allocParams};
+        console.log(data);
+        await sendData(data);
         const newStatus = getStatus();
 
         if (newStatus !== initialStatus)
@@ -35,42 +38,17 @@ async function handleSave(event) {
   }
 }
 
-async function saveAllocSettings() {
+function saveAllocSettings() {
   const formData = new FormData(form1);
   const data = {};
   formData.forEach((value, key) => {
     data[key] = value;
   });
 
-  fetch('/petco/live-animal/allocations/save-alloc-settings', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-  })
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.json();
-  })
-  .then(data => {
-    if (data.error)
-      throw new Error(data.error);
-    else {
-      document.getElementById("allocationID").value = data.allocID;
-      console.log("New alloc id saved and passed to form: ", data.allocID);
-    }
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('An error occurred while saving the allocation settings');
-    throw new Error(error);
-  });
+  return data;
 }
 
-async function extractTableData() {
+function extractTableData() {
   let tbody = document.querySelector('.alloc-params-table tbody');
   let rows = tbody.rows; // Get rows from the first tbody
   let data = [];
@@ -109,13 +87,12 @@ async function extractTableData() {
 
     data.push(rowData);
   }
+  return data;
+}
 
-  const allocID = document.getElementById("allocationID").value;
-
-
-  
+async function sendData(data) {
   // Send data to server
-  fetch(`/petco/live-animal/allocations/${allocID}/save-alloc-params`, {
+  fetch('/petco/live-animal/allocations/submit-allocation', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -123,15 +100,11 @@ async function extractTableData() {
     body: JSON.stringify(data)
   })
   .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
     return response.json();
   })
   .then(data => {
     if (data.errors) {
       displayErrors(data.errors)
-      throw new Error('Validation errors found.');
     }
     else {
       const ulElement = document.querySelector('.errors-list'); 
@@ -140,7 +113,6 @@ async function extractTableData() {
   })
   .catch((error) => {
     console.error('Error:', error);
-    throw new Error(error);
   })
 }
 
@@ -158,4 +130,3 @@ function displayErrors(errors) {
     ulElement.appendChild(listItem);
   });
 }
-

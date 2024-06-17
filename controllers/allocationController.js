@@ -1,7 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const db = require('../config/db');
 const permissions = require('../controllers/permissionsController');
-const { check, validationResult } = require('express-validator');
+const { check, body, validationResult } = require('express-validator');
 const moment = require('moment');
 
 // Display list of all allocations.
@@ -115,6 +115,8 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
 exports.save_allocation_post = asyncHandler(async (req, res, next) => {
   const transaction = await db.sequelize.transaction();
   try {
+    console.log(req.body.allocSettings);
+
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
@@ -124,64 +126,68 @@ exports.save_allocation_post = asyncHandler(async (req, res, next) => {
     }
 
     const record = await saveAllocationSettings(req, transaction);
-    req.body.allocationID = record.alloc_id;
-    await saveAllocationParams(req, transaction);
+    await saveAllocationParams(req, transaction, record);
 
     await transaction.commit();
-    res.status(200).json({ message: 'Allocation saved successfully', allocID: settings.alloc_id });
+    res.status(200).json({ message: 'Allocation saved successfully' });
   
   } catch (error) {
     await transaction.rollback();
     console.error(error);
-    res.status(500).json({ error: 'An error occurred while saving the allocation.' });
+    res.status(500).json({ message: 'An error occurred while saving the allocation.' });
   }
 });
 
 async function saveAllocationSettings(req, transaction) {
   try {
+    const alloc = req.body.allocSettings;
     const allocationData = {
-      alloc_name: req.body.allocationName,
-      alloc_date: req.body.allocationDate,
-      alloc_review_due_date: req.body.allocationReviewDate,
-      alloc_status: req.body.allocationStatus,
-      alloc_id: req.body.allocationID || null
+      alloc_name: alloc.allocationName,
+      alloc_date: alloc.allocationDate,
+      alloc_review_due_date: alloc.allocationReviewDate,
+      alloc_status: alloc.allocationStatus,
+      alloc_id: alloc.allocationID || null
     };
 
     let record;
 
     if (allocationData.alloc_id) {
-      return record = await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } }, {transaction});
+      await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } , transaction });
+      record = await db.allocations.findOne({ where: { alloc_id: allocationData.alloc_id } });
     } else {
-      return record = await db.allocations.create(allocationData, {transaction} );
+     record = await db.allocations.create(allocationData, transaction );
     }
 
+    return record;
+
   } catch (error) {
-    return error;
+    console.error("Error saving allocation settings: ", error);
+    throw error;
   }
 }
 
-async function saveAllocationParams(req, transaction) {
+async function saveAllocationParams(req, transaction, allocRecord) {
   try {
-    const tableData = req.body;
+    const tableData = req.body.allocParams;
 
     for (const key in tableData) {
       if (tableData.hasOwnProperty(key)) {
-        const param = { ...tableData[key], alloc_id: req.body.allocationID };
+        const param = { ...tableData[key], alloc_id: allocRecord.alloc_id };
 
         if (!param.like_sku) param.like_sku = null;
         if (!param.override_vend_id) param.override_vend_id = null;
 
         if (param.alloc_param_id) {
-          return await db.alloc_params.update(param, { where: { alloc_param_id: param.alloc_param_id }, transaction });
+          await db.alloc_params.update(param, { where: { alloc_param_id: param.alloc_param_id }, transaction });
         } else {
           param.alloc_param_id = null;
-          return await db.alloc_params.create(param, { transaction });
+          await db.alloc_params.create(param, { transaction });
         }
       }
     }
-
   } catch (error) {
-    return error;
+    console.error('Error saving allocation params:', error);
+    throw error;
   }
 
 }
@@ -265,43 +271,37 @@ async function isVendorExists(vend_id) {
 }
 
 exports.validateAllocSettings = [
-  body('allocationName')
+  body('allocSettings.allocationName')
     .notEmpty()
-    .withMessage('Allocation Name cannot be blank'),
+    .withMessage('Allocation Name cannot be blank.'),
 
-  body('allocationDate')
+  body('allocSettings.allocationDate')
     .notEmpty()
-    .withMessage('Allocation Date cannot be blank')
+    .withMessage('Allocation Date cannot be blank.')
     .isDate()
-    .withMessage('Allocation Date must be a valid date')
+    .withMessage('Allocation Date must be a valid date.'),
+
+  body('allocSettings.allocationReviewDate')
+    .notEmpty()
+    .withMessage('Review Due Date cannot be blank.')
+    .isDate()
+    .withMessage('Review Due Date must be a valid date.')
     .custom((value) => {
       if (moment(value).isBefore(moment(), 'day')) {
-        throw new Error('Allocation Date cannot be before today');
+        throw new Error('Review Due Date cannot be before today.');
       }
       return true;
     }),
 
-  body('allocationReviewDate')
-    .notEmpty()
-    .withMessage('Review Due Date cannot be blank')
-    .isDate()
-    .withMessage('Review Due Date must be a valid date')
-    .custom((value) => {
-      if (moment(value).isBefore(moment(), 'day')) {
-        throw new Error('Review Due Date cannot be before today');
-      }
-      return true;
-    }),
-
-  body('allocationStatus')
+  body('allocSettings.allocationStatus')
     .notEmpty()
     .withMessage('Allocation Status cannot be blank')
     .isIn(['Setup', 'RCAC Review', 'Sent To Vendor', 'Cancelled', 'Complete'])
-    .withMessage('Allocation Status must be one of the select options')
+    .withMessage('Allocation Status must be one of the select options.')
 ];
 
 exports.validateAllocParams = [
-  check('*.sku_nbr')
+  check('allocParams.*.sku_nbr')
     .notEmpty().withMessage('sku is required.')
     .custom(value => isSkuExists(value).then(exists => {
       if (!exists) {
@@ -309,7 +309,7 @@ exports.validateAllocParams = [
       }
     })),
     
-  check('*.like_sku')
+  check('allocParams.*.like_sku')
     .optional({ nullable: true, checkFalsy: true })
     .custom(value => {
       if (value) {
@@ -322,14 +322,14 @@ exports.validateAllocParams = [
       return true;
     }),
 
-  check('*.alloc_method')
+  check('allocParams.*.alloc_method')
     .isIn(['Target WOS', 'Target Qty', 'Ignore QOH/Target Qty'])
     .withMessage('Allocation Method is not valid.'),
 
-  check('*.target_value')
+  check('allocParams.*.target_value')
     .custom((value, { req, path }) => {
       const index = path.match(/\d+/)[0];
-      const alloc_method = req.body[index].alloc_method;
+      const alloc_method = req.body.allocParams[index].alloc_method;
       const numValue = parseFloat(value);
       if (alloc_method === 'Target WOS') {
         return numValue > 0;
@@ -339,11 +339,11 @@ exports.validateAllocParams = [
     })
     .withMessage('"Target WOS/Qty" must be greater than 0. Target Qty (if selected) must be an integer.'),
 
-  check('*.main_sales_method')
+  check('allocParams.*.main_sales_method')
     .isIn(['CY Sold', 'LY Sold', 'Subclass Factor', 'Sku Factor'])
     .withMessage('Main Sales Method is not valid.'),
 
-  check('*.avg_weekly_sold_per_store')
+  check('allocParams.*.avg_weekly_sold_per_store')
     .notEmpty().withMessage("Avg Weekly sold is required.")
     .custom(value => {
       if (!value) return true; // If the value is not present, skip further checks as notEmpty() will handle this case
@@ -351,21 +351,21 @@ exports.validateAllocParams = [
       throw new Error('Avg Weekly Sold must be a positive number greater than zero.');
     }),
 
-  check('*.eoq')
+  check('allocParams.*.eoq')
     .isInt({ min: 1 })
     .withMessage('EOQ must be a positive integer greater than zero.'),
 
-  check('*.override_store_count')
+  check('allocParams.*.override_store_count')
     .optional({ nullable: true, checkFalsy: true })
     .isInt({ min: 1 })
     .withMessage('Override Store Count must be a positive integer greater than zero.'),
 
-  check('*.exclude_stores')
+  check('allocParams.*.exclude_stores')
     .optional({ nullable: true, checkFalsy: true })
     .isIn(['', 'Yes', 'No'])
     .withMessage('Exclude Stores must be Yes or No.'),
 
-  check('*.min_per_store')
+  check('allocParams.*.min_per_store')
     .optional({ nullable: true, checkFalsy: true })
     .isInt({ min: 1 }).withMessage('Min Per Store must be a positive integer greater than zero.')
     .custom((value, { req, path }) => {
@@ -373,19 +373,19 @@ exports.validateAllocParams = [
         return true; // Skip the check if value is blank
       }
       const index = path.match(/\d+/)[0];
-      const max_per_store = req.body[index].max_per_store;
+      const max_per_store = req.body.allocParams[index].max_per_store;
       if (max_per_store && parseInt(value) > parseInt(max_per_store)) {
         throw new Error('Min Per Store must be less than Max Per Store.');
       }
       return true;
     }),
 
-  check('*.max_per_store')
+  check('allocParams.*.max_per_store')
     .optional({ nullable: true, checkFalsy: true })
     .isInt({ min: 1 })
     .withMessage('Max Per Store must be a positive integer greater than zero.'),
 
-  check('*.override_vend_id')
+  check('allocParams.*.override_vend_id')
     .optional({ nullable: true, checkFalsy: true })
     .custom(value => {
       if (value) {
@@ -398,23 +398,19 @@ exports.validateAllocParams = [
       return true;
     }),
 
-  check('*.limit_to_attached_vendor')
+  check('allocParams.*.limit_to_attached_vendor')
     .optional({ nullable: true, checkFalsy: true })
     .isIn(['', 'Yes', 'No'])
     .withMessage('Limit to Attached Vendor must be Yes or No.'),
 
-  check('*.hard_qty_limit')
+  check('allocParams.*.hard_qty_limit')
     .optional({ nullable: true, checkFalsy: true })
     .isInt({ min: 1 })
     .withMessage('Hard Qty Limit must be a positive integer greater than zero.'),
 
-  check('*.discounted_cost')
-    .optional({ nullable: true, checkFalsy: true })
+  check('allocParams.*.discounted_cost')
     .customSanitizer(value => value.replace('$', ''))
-    .custom(value => {
-      if (value === '') return true; // Skip validation if the field is empty
-      return parseFloat(value) > 0;
-    })
+    .isFloat({ gt: 0 })
     .withMessage('Allocation Cost must be a positive number greater than zero.')
 ];
 

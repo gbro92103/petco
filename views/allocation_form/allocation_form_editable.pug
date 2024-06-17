@@ -9,7 +9,7 @@ form.settings-form(method="POST" action=`update/save-alloc-settings`)
     .form-field
       label(for="allocationDate") Allocation Date:
         span.required *
-      input(type="date" id="allocationDate" name="allocationDate" value=allocation.alloc_date required)
+      input(type="date" id="allocationDate" name="allocationDate" value=allocation.alloc_date required readonly=(allocation.alloc_id ? true : false))
 
     .form-field
       label(for="allocationReviewDate") Review Due Date:
