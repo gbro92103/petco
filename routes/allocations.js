@@ -28,8 +28,7 @@ router.get("/create/", requireLogin, requirePermission("canAddAllocations"), all
 router.get("/:id/update/", requireLogin, allocation_controller.update_allocation_get);
 
 /*save alloc settings and params */
-router.post("/save-alloc-settings/", requireLogin, requirePermission("canUpdateAllocations"), allocation_controller.save_alloc_settings_post);
-router.post("/:id/save-alloc-params/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_controller.validateAllocParams, allocation_controller.save_alloc_params_post);
+router.post("/submit-allocation/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_controller.validateAllocSettings, allocation_controller.validateAllocParams, allocation_controller.save_allocation_post);
 
 /*save alloc lines*/
 router.post("/:id/save-alloc-line/", requireLogin, requirePermission("canReviewAllocations"), allocation_controller.save_alloc_line_post);

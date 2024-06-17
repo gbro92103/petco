@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 const db = require('../config/db');
 const permissions = require('../controllers/permissionsController');
 const { check, validationResult } = require('express-validator');
+const moment = require('moment');
 
 // Display list of all allocations.
 exports.allocations_list_get = asyncHandler(async (req, res, next) => {
@@ -111,7 +112,32 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
     }
 });
 
-exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
+exports.save_allocation_post = asyncHandler(async (req, res, next) => {
+  const transaction = await db.sequelize.transaction();
+  try {
+    const errors = validationResult(req);
+
+    if (!errors.isEmpty()) {
+      const uniqueErrorMessages = [...new Set(errors.array().map(error => error.msg))];
+      console.log('Discovered errors:', uniqueErrorMessages);
+      return res.status(400).json({ errors: uniqueErrorMessages });
+    }
+
+    const record = await saveAllocationSettings(req, transaction);
+    req.body.allocationID = record.alloc_id;
+    await saveAllocationParams(req, transaction);
+
+    await transaction.commit();
+    res.status(200).json({ message: 'Allocation saved successfully', allocID: settings.alloc_id });
+  
+  } catch (error) {
+    await transaction.rollback();
+    console.error(error);
+    res.status(500).json({ error: 'An error occurred while saving the allocation.' });
+  }
+});
+
+async function saveAllocationSettings(req, transaction) {
   try {
     const allocationData = {
       alloc_name: req.body.allocationName,
@@ -121,64 +147,44 @@ exports.save_alloc_settings_post = asyncHandler(async (req, res, next) => {
       alloc_id: req.body.allocationID || null
     };
 
-    console.log("alloc data that made it to the server: ", allocationData);
-
-    let settings;
+    let record;
 
     if (allocationData.alloc_id) {
-      settings = await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } });
+      return record = await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } }, {transaction});
     } else {
-      settings = await db.allocations.create(allocationData);
+      return record = await db.allocations.create(allocationData, {transaction} );
     }
 
-    res.status(200).json({ message: 'Allocation settings saved successfully', allocID: settings.alloc_id });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'An error occurred while saving the allocation settings' });
+    return error;
   }
-});
+}
 
-
-exports.save_alloc_params_post = asyncHandler(async (req, res, next) => {
-  const transaction = await db.sequelize.transaction();
+async function saveAllocationParams(req, transaction) {
   try {
     const tableData = req.body;
-    console.log('Received table data:', tableData);
-
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      const uniqueErrorMessages = [...new Set(errors.array().map(error => error.msg))];
-      console.log('Discovered errors:', uniqueErrorMessages);
-      return res.status(200).json({ errors: uniqueErrorMessages });
-    }
-
-    console.log('Validation passed, saving data to the database...');
 
     for (const key in tableData) {
       if (tableData.hasOwnProperty(key)) {
-        const param = { ...tableData[key], alloc_id: req.params.id };
+        const param = { ...tableData[key], alloc_id: req.body.allocationID };
 
         if (!param.like_sku) param.like_sku = null;
         if (!param.override_vend_id) param.override_vend_id = null;
 
         if (param.alloc_param_id) {
-          await db.alloc_params.update(param, { where: { alloc_param_id: param.alloc_param_id }, transaction });
+          return await db.alloc_params.update(param, { where: { alloc_param_id: param.alloc_param_id }, transaction });
         } else {
           param.alloc_param_id = null;
-          await db.alloc_params.create(param, { transaction });
+          return await db.alloc_params.create(param, { transaction });
         }
       }
     }
 
-    await transaction.commit();
-    res.status(200).json({ message: 'Data saved successfully.' });
   } catch (error) {
-    await transaction.rollback();
-    console.error('Error saving data:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    return error;
   }
-});
+
+}
 
 exports.delete_alloc_param_post = asyncHandler(async (req, res, next) => {
   
@@ -257,6 +263,42 @@ async function isVendorExists(vend_id) {
     return error;
   }
 }
+
+exports.validateAllocSettings = [
+  body('allocationName')
+    .notEmpty()
+    .withMessage('Allocation Name cannot be blank'),
+
+  body('allocationDate')
+    .notEmpty()
+    .withMessage('Allocation Date cannot be blank')
+    .isDate()
+    .withMessage('Allocation Date must be a valid date')
+    .custom((value) => {
+      if (moment(value).isBefore(moment(), 'day')) {
+        throw new Error('Allocation Date cannot be before today');
+      }
+      return true;
+    }),
+
+  body('allocationReviewDate')
+    .notEmpty()
+    .withMessage('Review Due Date cannot be blank')
+    .isDate()
+    .withMessage('Review Due Date must be a valid date')
+    .custom((value) => {
+      if (moment(value).isBefore(moment(), 'day')) {
+        throw new Error('Review Due Date cannot be before today');
+      }
+      return true;
+    }),
+
+  body('allocationStatus')
+    .notEmpty()
+    .withMessage('Allocation Status cannot be blank')
+    .isIn(['Setup', 'RCAC Review', 'Sent To Vendor', 'Cancelled', 'Complete'])
+    .withMessage('Allocation Status must be one of the select options')
+];
 
 exports.validateAllocParams = [
   check('*.sku_nbr')
