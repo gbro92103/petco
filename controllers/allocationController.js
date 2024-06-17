@@ -115,13 +115,11 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
 exports.save_allocation_post = asyncHandler(async (req, res, next) => {
   const transaction = await db.sequelize.transaction();
   try {
-    console.log(req.body.allocSettings);
 
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
       const uniqueErrorMessages = [...new Set(errors.array().map(error => error.msg))];
-      console.log('Discovered errors:', uniqueErrorMessages);
       return res.status(400).json({ errors: uniqueErrorMessages });
     }
 
@@ -155,7 +153,7 @@ async function saveAllocationSettings(req, transaction) {
       await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } , transaction });
       record = await db.allocations.findOne({ where: { alloc_id: allocationData.alloc_id } });
     } else {
-     record = await db.allocations.create(allocationData, transaction );
+      record = await db.allocations.create(allocationData, transaction );
     }
 
     return record;
@@ -205,7 +203,6 @@ exports.delete_alloc_param_post = asyncHandler(async (req, res, next) => {
     if (result) {
         res.status(200).json({ message: `Row was deleted successfully.`});
     } else {
-        console.log(`No row found with alloc_param_id = ${paramID}.`);
         res.status(500).json({ error: 'Allocation parameter not found.' });
     }
   } catch (error) {
