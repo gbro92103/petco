@@ -26,14 +26,16 @@ async function handleSave(event) {
         await sendData(data);
         const newStatus = getStatus();
 
-        if (newStatus !== initialStatus)
+        if (newStatus !== initialStatus) {
           location.reload();
+        }
       }
       catch (error) {
         console.error ("Error saving:", error)
       }
     } else {
       form1.reportValidity(); // Show validation error
+      throw error("form not valid.");
     }
   }
 }
