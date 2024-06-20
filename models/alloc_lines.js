@@ -4,111 +4,15 @@ module.exports = function(sequelize, DataTypes) {
     alloc_line_id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
-      allowNull: true,
+      allowNull: false,
       primaryKey: true
-    },
-    str_nbr: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'stores',
-        key: 'str_nbr'
-      }
-    },
-    str_name: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    zone_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    dist_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    rcac_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'users',
-        key: 'rcac_id'
-      }
-    },
-    rcac_name: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    rdac_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'users',
-        key: 'user_id'
-      }
-    },
-    rdac_name: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    dt_opened: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    dt_closed: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    str_active: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true
-    },
-    like_sku: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'skus',
-        key: 'sku_nbr'
-      }
     },
     sku_nbr: {
       type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'skus',
-        key: 'sku_nbr'
-      }
-    },
-    desc: {
-      type: DataTypes.TEXT,
       allowNull: true
     },
-    dept: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    subclass: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    alloc_id: {
+    str_nbr: {
       type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'allocations',
-        key: 'alloc_id'
-      }
-    },
-    eoq: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    override_store_count: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    main_sales_method: {
-      type: DataTypes.TEXT,
       allowNull: true
     },
     ly_sld: {
@@ -135,20 +39,146 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: true
     },
+    qoh_plus_qoo: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.getDataValue('qoo') + this.getDataValue('qoh');
+      }
+    },
     ar: {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },
     attached_vend_id: {
+      type: "TEXT(5)",
+      allowNull: true
+    },
+    alloc_param_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    alloc_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    like_sku: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    avg_weekly_sold_per_store: {
+      type: DataTypes.REAL,
+      allowNull: true
+    },
+    alloc_method: {
       type: DataTypes.TEXT,
-      allowNull: true,
-      references: {
-        model: 'vendors',
-        key: 'vend_id'
-      }
+      allowNull: true
+    },
+    target_value: {
+      type: DataTypes.REAL,
+      allowNull: true
+    },
+    min_per_store: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    max_per_store: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    eoq: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    override_store_count: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    main_sales_method: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    override_vend_id: {
+      type: "TEXT(5)",
+      allowNull: true
     },
     limit_to_attached_vendor: {
       type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    hard_qty_limit: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    exclude_stores: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    discounted_cost: {
+      type: DataTypes.REAL,
+      allowNull: true
+    },
+    desc: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    dept: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    subclass: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    str_name: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    zone_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    zone_name: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    rdac_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    rdac_name: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    dist_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    rcac_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    rcac_name: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    dt_opened: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    dt_closed: {
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    },
+    str_active: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    attached_vend_name: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    override_vend_name: {
+      type: DataTypes.TEXT,
       allowNull: true
     },
     calc_alloc_qty: {
@@ -164,17 +194,17 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     },
     notes: {
-      type: DataTypes.TEXT,
+      type: DataTypes.INTEGER,
       allowNull: true
     },
     changed_by_id: {
       type: DataTypes.INTEGER,
-      allowNull: false
+      allowNull: true
     },
     changed_by_date: {
-      type: DataTypes.DATE,
-      allowNull: false
-  }
+      type: DataTypes.DATEONLY,
+      allowNull: true
+    }
   }, {
     sequelize,
     tableName: 'alloc_lines',

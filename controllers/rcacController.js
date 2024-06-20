@@ -10,7 +10,7 @@ exports.review_list_get = asyncHandler(async (req, res, next) => {
         const loggedInUser = req.session.user;
         const menuOptions = permissions.getMenuOptions(loggedInUser.user_type);
         
-        const reviews = await db.rcac_review.findAll({
+        const reviews = await db.rcac_reviews.findAll({
             include: [
                 {
                     model: db.allocations,

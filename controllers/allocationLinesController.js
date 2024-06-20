@@ -44,7 +44,7 @@ async function clearRCACNotesTable(alloc_id, transaction) {
 
 async function clearRCACReviewTable(alloc_id, transaction) {
     try {
-        await db.rcac_review.destroy({
+        await db.rcac_reviews.destroy({
             where: {
                 alloc_id: alloc_id
             }, transaction
@@ -233,7 +233,7 @@ async function updateWithVendorInfo(alloc_id, transaction) {
 async function reinsertRCACNotes(alloc_id, transaction) {
     try {
       // Fetch the relevant records from save_rcac_notes
-      const notesToUpdate = await SaveRcacNotes.findAll({
+      const notesToUpdate = await db.save_rcac_notes.findAll({
         where: {
             alloc_id: alloc_id
         },
@@ -242,7 +242,7 @@ async function reinsertRCACNotes(alloc_id, transaction) {
 
         // Loop through each record and update alloc_lines
         for (const note of notesToUpdate) {
-            await AllocLines.update({
+            await db.alloc_lines.update({
                 revised_alloc_qty: note.revised_alloc_qty,
                 notes: note.notes,
                 changed_by_id: note.changed_by_id,
@@ -285,7 +285,7 @@ async function insertRCACReviewRecords(alloc_id, transaction) {
         }));
 
         // Bulk insert into rcac_review
-        await db.rcac_review.bulkCreate(recordsToInsert, { transaction });
+        await db.rcac_reviews.bulkCreate(recordsToInsert, { transaction });
     } catch (error) {
         console.error('Error updating data:', error);
         throw error  

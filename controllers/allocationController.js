@@ -105,7 +105,9 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
           user: loggedInUser,
           menuOptions: menuOptions,
           permissions: userPermissions
-        });  
+        }); 
+        
+        console.log("Allocation Data sent to get form:", alloc);
 
     } catch (error) {
         console.error("Error:", error.message);
@@ -127,12 +129,12 @@ exports.save_allocation_post = asyncHandler(async (req, res, next) => {
     await saveAllocationParams(req, transaction, record);
 
     await transaction.commit();
-    res.status(200).json({ message: 'Allocation saved successfully' });
+    res.status(200).json({ message: 'Allocation saved successfully', allocID: record.alloc_id });
   
   } catch (error) {
     await transaction.rollback();
     console.error(error);
-    res.status(500).json({ message: 'An error occurred while saving the allocation.' });
+    res.status(500).json({ message: 'An error occurred while saving the allocation.', allocID: req.body.allocationID });
   }
 });
 
@@ -151,7 +153,7 @@ async function saveAllocationSettings(req, transaction) {
 
     if (allocationData.alloc_id) {
       await db.allocations.update(allocationData, { where: { alloc_id: allocationData.alloc_id } , transaction });
-      record = await db.allocations.findOne({ where: { alloc_id: allocationData.alloc_id } });
+      record = await db.allocations.findByPk(allocationData.alloc_id);
     } else {
       record = await db.allocations.create(allocationData, transaction );
     }
@@ -193,7 +195,6 @@ async function saveAllocationParams(req, transaction, allocRecord) {
 exports.delete_alloc_param_post = asyncHandler(async (req, res, next) => {
   
   try {
-
     const result = await db.alloc_params.destroy({
         where: {
             alloc_param_id: req.params.id
@@ -216,7 +217,7 @@ exports.update_desc_and_costs_post = asyncHandler(async (req, res, next) => {
 
   try {
       // Look up the SKU number in the database
-      const sku = await db.skus.findOne({ where: { sku_nbr: skuNbr } });
+      const sku = await db.skus.findByPk(skuNbr);
 
       if (!sku) {
           // SKU not found

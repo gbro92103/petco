@@ -3,6 +3,8 @@ const form1 = document.querySelector(".settings-form")// Submit form 1
 document.querySelector(".save").addEventListener("click", (event) => handleSave(event));
 document.getElementById('allocationStatus').addEventListener("change", (event) => handleSave(event));
 
+const allocID = document.getElementById('allocationID').value;
+console.log("Allocation ID is:", allocID);
 
 // Function to get the current value of the field
 function getStatus() {
@@ -14,33 +16,41 @@ const initialStatus = getStatus();
 
 
 async function handleSave(event) {
+  console.log("handle save process starting. Initial status: " + initialStatus);
   if (form1) {
-    if (form1.checkValidity()) { 
+    if (form1.checkValidity()) {
       event.preventDefault();
-      
-      try {
-        const allocSettings = saveAllocSettings();
-        const allocParams = extractTableData();
-        const data = {allocSettings, allocParams};
-        console.log(data);
-        await sendData(data);
-        const newStatus = getStatus();
 
-        if (newStatus !== initialStatus) {
-          location.reload();
-        }
-      }
-      catch (error) {
-        console.error ("Error saving:", error)
+      try {
+        const allocSettings = getAllocSettings();
+        const allocParams = extractTableData();
+        const data = { allocSettings, allocParams };
+        const responseData = await sendData(data); // Await the sendData function
+        
+        if (!responseData.errors) {
+          const newStatus = getStatus(); // Assuming getStatus() gets the new status from the form
+          console.log("new allocation status is: " + newStatus);
+          
+          if (newStatus !== initialStatus) {
+            console.log("allocation status is different, so reloading page.");
+            location.reload();
+          }
+        } 
+
+        return responseData;
+      } catch (error) {
+        console.error("Error saving:", error);
+        throw error;
       }
     } else {
       form1.reportValidity(); // Show validation error
-      throw error("form not valid.");
+      throw new Error('form data is invalid');
     }
   }
 }
 
-function saveAllocSettings() {
+
+function getAllocSettings() {
   const formData = new FormData(form1);
   const data = {};
   formData.forEach((value, key) => {
@@ -93,8 +103,8 @@ function extractTableData() {
 }
 
 async function sendData(data) {
-  // Send data to server
-  fetch('/petco/live-animal/allocations/submit-allocation', {
+  console.log("sending allocation data to the server to save.");
+  return fetch('/petco/live-animal/allocations/submit-allocation', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -105,18 +115,25 @@ async function sendData(data) {
     return response.json();
   })
   .then(data => {
+    document.getElementById('allocationID').value = data.allocID;
+
     if (data.errors) {
-      displayErrors(data.errors)
-    }
-    else {
+      displayErrors(data.errors);
+      console.log("errors were found when attempting to save allocation data.");
+    } else {
       const ulElement = document.querySelector('.errors-list'); 
       ulElement.innerHTML = '';
+      console.log("allocation data was saved successfully.");
     }
+
+    return data; // Ensure the function returns the data
   })
-  .catch((error) => {
+  .catch(error => {
     console.error('Error:', error);
-  })
+    throw error; // Rethrow the error to be caught in handleSave
+  });
 }
+
 
 // Function to display error messages
 function displayErrors(errors) {

@@ -2,24 +2,22 @@ const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
   return sequelize.define('invloc', {
     sku_nbr: {
-      autoIncrement: false,
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: 'skus',
         key: 'sku_nbr'
       },
-      unique: false
+      unique: true
     },
     str_nbr: {
-      autoIncrement: false,
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
         model: 'stores',
         key: 'str_nbr'
       },
-      unique: false
+      unique: true
     },
     ly_sld: {
       type: DataTypes.INTEGER,

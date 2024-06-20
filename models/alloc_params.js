@@ -4,7 +4,7 @@ module.exports = function(sequelize, DataTypes) {
     alloc_param_id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
       primaryKey: true
     },
     alloc_id: {
@@ -13,7 +13,8 @@ module.exports = function(sequelize, DataTypes) {
       references: {
         model: 'allocations',
         key: 'alloc_id'
-      }
+      },
+      unique: true
     },
     sku_nbr: {
       type: DataTypes.INTEGER,
@@ -21,7 +22,8 @@ module.exports = function(sequelize, DataTypes) {
       references: {
         model: 'skus',
         key: 'sku_nbr'
-      }
+      },
+      unique: true
     },
     like_sku: {
       type: DataTypes.INTEGER,
@@ -33,6 +35,10 @@ module.exports = function(sequelize, DataTypes) {
     },
     avg_weekly_sold_per_store: {
       type: DataTypes.REAL,
+      allowNull: false
+    },
+    alloc_method: {
+      type: DataTypes.TEXT,
       allowNull: false
     },
     target_value: {
@@ -54,10 +60,6 @@ module.exports = function(sequelize, DataTypes) {
     override_store_count: {
       type: DataTypes.INTEGER,
       allowNull: true
-    },
-    alloc_method: {
-      type: DataTypes.TEXT,
-      allowNull: false
     },
     main_sales_method: {
       type: DataTypes.TEXT,
@@ -85,24 +87,42 @@ module.exports = function(sequelize, DataTypes) {
     },
     act_alloc_qty: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false,
+      defaultValue: 0
     },
     avg_cost: {
-      type: DataTypes.INTEGER,
-      allowNull: true
+      type: DataTypes.REAL,
+      allowNull: false,
+      defaultValue: 0.0
     },
     discounted_cost: {
-      type: DataTypes.INTEGER,
-      allowNull: true
+      type: DataTypes.REAL,
+      allowNull: false,
+      defaultValue: 0.0
     },
     total_cost: {
+      type: DataTypes.REAL,
+      allowNull: false,
+      defaultValue: 0.0
+    },
+    act_nbr_of_stores: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false,
+      defaultValue: 0
     }
   }, {
     sequelize,
     tableName: 'alloc_params',
-    timestamps: false
+    timestamps: false,
+    indexes: [
+      {
+        name: "sqlite_autoindex_alloc_params_1",
+        unique: true,
+        fields: [
+          { name: "alloc_id" },
+          { name: "sku_nbr" },
+        ]
+      },
+    ]
   });
 };
-

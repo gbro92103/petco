@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('rcac_review', {
+  return sequelize.define('rcac_reviews', {
     review_id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -11,7 +11,7 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'allocation',
+        model: 'allocations',
         key: 'alloc_id'
       }
     },
@@ -19,8 +19,8 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'user',
-        key: 'rcac_id'
+        model: 'users',
+        key: 'user_id'
       }
     },
     reviewed: {
@@ -35,13 +35,13 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'user',
+        model: 'users',
         key: 'user_id'
       }
     }
   }, {
     sequelize,
-    tableName: 'rcac_review',
+    tableName: 'rcac_reviews',
     timestamps: false
   });
 };

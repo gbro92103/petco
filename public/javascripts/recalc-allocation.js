@@ -3,14 +3,15 @@ document.querySelector(".recalc").addEventListener("click", (event) => recalc(ev
 async function recalc(event) {
     try {
         await handleSave(event);
-        await runRecalcProcess();
+        runRecalcProcess();
     } catch(error) {
         console.error(error);
     }
 }
 
-async function runRecalcProcess() {
+function runRecalcProcess() {
     // recalc allocation
+    console.log("recalc fetch process starting.");
     const allocID = document.getElementById('allocationID').value;
     fetch(`/petco/live-animal/allocations/${allocID}/recalc-allocation`, {
       method: 'POST',
@@ -19,12 +20,16 @@ async function runRecalcProcess() {
       return response.json();
     })
     .then(data => {
-        if (!data.error) {
-            window.location.pathname = `/petco/live-animal/allocations/${allocID}/update`;
+        if (data.error === true) {
+          throw new Error(data.errorMsg)
         } else
-            throw error(data.errorMsg)
+          console.log("recalc process completed successfully.")
+          const pathName = `/petco/live-animal/allocations/${allocID}/update`;
+          window.location.pathname = pathName;
+          console.log("loading " + pathName + ".");
+          
       })
     .catch((error) => {
-      console.error('Error:', error);
+      console.error('Recalc Process Error:', error);
     })
   }
