@@ -37,12 +37,12 @@ if allocLines && allocLines.length > 0
                 option(value="Sku Factor" selected=line.sales_method==="Sku Factor") Sku Factor
           else
             td= line.sales_method
-          td= line.sc_factor 
-          td= line.sku_factor
-          td= line.ly_sld 
-          td= line.cy_sld 
+          td= line.use_sc_factor 
+          td= line.use_sku_factor
+          td= line.use_ly_sld
+          td= line.use_cy_sld
           td= line.qoh_plus_qoo 
-          td= line.wos 
+          td= line.wos ? line.wos.toFixed(2) : ""
           if (allocation.alloc_status === 'Setup')
             td
               input(type="text" name=`alloc_qty_${line.alloc_line_id}}` value=line.alloc_qty)
@@ -50,7 +50,7 @@ if allocLines && allocLines.length > 0
             td= line.alloc_qty
           td
             input(type="text" name=`revised_alloc_qty_${line.alloc_line_id}` value=line.revised_alloc_qty) 
-          td= line.new_wos 
+          td= line.new_wos ? line.new_wos.toFixed(2) : ""
           if (allocation.alloc_status !== 'Setup')
             td= line.rcac_name
           td

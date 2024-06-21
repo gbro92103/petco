@@ -65,6 +65,43 @@ function initModels(sequelize) {
   skus.belongsTo(vendors, { as: "primary_vend_vendor", foreignKey: "primary_vend"});
   vendors.hasMany(skus, { as: "skus", foreignKey: "primary_vend"});
 
+  stores.hasMany(alloc_lines, { foreignKey: 'str_nbr' });
+  alloc_lines.belongsTo(stores, { foreignKey: 'str_nbr' });
+
+  alloc_lines.prototype.calculateQtySldPerWeek = async function() {
+    const salesMethod = this.sales_method;
+    const avgWeeklySldPerStore = this.avg_weekly_sld_per_store || 0;
+    const store = await this.getStore();
+  
+    if (!store) return 0;
+  
+    const cyWeeksOpen = store.cy_weeks_open || 1; // Avoid division by zero
+    const lyWeeksOpen = store.ly_weeks_open || 1; // Avoid division by zero
+  
+    if (salesMethod === 'LY Sold' || salesMethod === '') {
+      return this.use_ly_sld / lyWeeksOpen;
+    } else if (salesMethod === 'CY Sold') {
+      return this.use_cy_sld / cyWeeksOpen;
+    } else if (salesMethod === 'SC Factor') {
+      return this.use_sc_factor * avgWeeklySldPerStore;
+    } else if (salesMethod === 'Sku Factor') {
+      return this.use_sku_factor * avgWeeklySldPerStore;
+    }
+    return 0;
+  };
+  
+  // Hook to calculate qty_sld_per_week before fetching
+  alloc_lines.addHook('afterFind', async (allocLines, options) => {
+    if (!Array.isArray(allocLines)) {
+      allocLines = [allocLines];
+    }
+    for (const allocLine of allocLines) {
+      if (allocLine) {
+        allocLine.qty_sld_per_week = await allocLine.calculateQtySldPerWeek();
+      }
+    }
+  });
+  
   return {
     SequelizeMeta,
     alloc_lines,

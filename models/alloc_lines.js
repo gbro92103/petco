@@ -31,6 +31,30 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.REAL,
       allowNull: true
     },
+    use_ly_sld: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return (this.like_sku ? this.like_sku_ly_sld : this.ly_sld) || 0;
+      }
+    },
+    use_cy_sld: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return (this.like_sku ? this.like_sku_cy_sld : this.cy_sld) || 0;
+      }
+    },
+    use_sc_factor: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return (this.like_sku ? this.like_sku_sc_factor : this.sc_factor) || 0;
+      }
+    },
+    use_sku_factor: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return (this.like_sku ? this.like_sku_sku_factor : this.sku_factor) || 0;
+      }
+    },
     qoh: {
       type: DataTypes.INTEGER,
       allowNull: true
@@ -44,6 +68,14 @@ module.exports = function(sequelize, DataTypes) {
       get() {
         return this.getDataValue('qoo') + this.getDataValue('qoh');
       }
+    },
+    wos: {
+      type: DataTypes.REAL,
+      allowNull: true
+    },
+    new_wos: {
+      type: DataTypes.REAL,
+      allowNull: true
     },
     ar: {
       type: DataTypes.BOOLEAN,
@@ -94,6 +126,10 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     },
     main_sales_method: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    sales_method: {
       type: DataTypes.TEXT,
       allowNull: true
     },
@@ -204,10 +240,15 @@ module.exports = function(sequelize, DataTypes) {
     changed_by_date: {
       type: DataTypes.DATEONLY,
       allowNull: true
-    }
+    }    
   }, {
     sequelize,
     tableName: 'alloc_lines',
-    timestamps: false
-  });
-};
+    timestamps: false,
+    hooks: {
+      beforeSave: (alloc_lines) => {
+        alloc_lines.wos = 18.219;
+      }
+    }  
+  }
+)};

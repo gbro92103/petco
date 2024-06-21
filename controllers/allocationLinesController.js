@@ -15,6 +15,7 @@ exports.recalc_allocation_post = asyncHandler(async (req, res, next) => {
         await deleteAllocLinesRecords(allocID, transaction);
         await insertInvLocRecords(allocID, transaction);
         await updateWithSkuInfo(allocID, transaction);
+        await updateWithLikeSkuSalesInfo(allocID, transaction);
         await updateWithStoreInfo(allocID, transaction);
         await updateWithVendorInfo(allocID, transaction);
         await reinsertRCACNotes(allocID, transaction);
@@ -146,6 +147,42 @@ async function updateWithSkuInfo(alloc_id, transaction) {
       console.error('Error updating data:', error);
       throw error;
     });
+}
+
+async function updateWithLikeSkuSalesInfo(alloc_id, transaction) {
+    
+    const updates = await db.sequelize.query(`
+    SELECT 
+      l.alloc_line_id,
+      i.cy_sld,
+      i.ly_sld,
+      i.sc_factor,
+      i.sku_factor
+    FROM alloc_lines l
+    INNER JOIN invloc i ON i.sku_nbr = l.like_sku AND i.str_nbr = l.str_nbr
+    WHERE l.alloc_id = :alloc_id AND l.like_sku IS NOT NULL
+  `, {
+    replacements: { alloc_id: alloc_id },
+    type: db.sequelize.QueryTypes.SELECT
+  });
+
+  // Step 2: Update alloc_lines table with fetched data
+  const updatePromises = updates.map(update => {
+    return db.alloc_lines.update(
+      {
+        like_sku_cy_sld: update.cy_sld,
+        like_sku_ly_sld: update.ly_sld,
+        like_sku_sc_factor: update.sc_factor,
+        like_sku_sku_factor: update.sku_factor
+      },
+      {
+        where: { id: update.alloc_line_id }
+      },
+      transaction
+    );
+  });
+
+  await Promise.all(updatePromises);
 }
 
 async function updateWithStoreInfo(alloc_id, transaction) {
