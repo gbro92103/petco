@@ -34,25 +34,25 @@ module.exports = function(sequelize, DataTypes) {
     use_ly_sld: {
       type: DataTypes.VIRTUAL,
       get() {
-        return (this.like_sku ? this.like_sku_ly_sld : this.ly_sld) || 0;
+        return this.like_sku_ly_sld || this.ly_sld || 0;
       }
     },
     use_cy_sld: {
       type: DataTypes.VIRTUAL,
       get() {
-        return (this.like_sku ? this.like_sku_cy_sld : this.cy_sld) || 0;
+        return this.like_sku_cy_sld || this.cy_sld || 0;
       }
     },
     use_sc_factor: {
       type: DataTypes.VIRTUAL,
       get() {
-        return (this.like_sku ? this.like_sku_sc_factor : this.sc_factor) || 0;
+        return this.like_sku_sc_factor || this.sc_factor || 0;
       }
     },
     use_sku_factor: {
       type: DataTypes.VIRTUAL,
       get() {
-        return (this.like_sku ? this.like_sku_sku_factor : this.sku_factor) || 0;
+        return this.like_sku_sku_factor || this.sku_factor || 0;
       }
     },
     qoh: {
@@ -70,12 +70,16 @@ module.exports = function(sequelize, DataTypes) {
       }
     },
     wos: {
-      type: DataTypes.REAL,
-      allowNull: true
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.qoh_plus_qoo / this.qty_sld_per_week;
+      }
     },
     new_wos: {
-      type: DataTypes.REAL,
-      allowNull: true
+      type: DataTypes.VIRTUAL,
+      get() {
+        return (this.qoh_plus_qoo + this.act_alloc_qty) / this.qty_sld_per_week;
+      }
     },
     ar: {
       type: DataTypes.BOOLEAN,
@@ -123,6 +127,18 @@ module.exports = function(sequelize, DataTypes) {
     },
     override_store_count: {
       type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    rank: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    is_excluded: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    is_filtered: {
+      type: DataTypes.BOOLEAN,
       allowNull: true
     },
     main_sales_method: {
@@ -217,6 +233,18 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    act_vend_id: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return override_vend_id || attached_vend_id 
+      }
+    },
+    act_vend_name: {
+      type: DataTypes.VIRTUAL,
+      get() {
+        return override_vend_name || override_vend_name
+      }
+    },
     calc_alloc_qty: {
       type: DataTypes.INTEGER,
       allowNull: true
@@ -226,8 +254,10 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     },
     act_alloc_qty: {
-      type: DataTypes.INTEGER,
-      allowNull: true
+      type: DataTypes.VIRTUAL,
+      get() {
+        return this.revised_alloc_qty || this.calc_alloc_qty || 0;
+      }
     },
     notes: {
       type: DataTypes.INTEGER,
@@ -245,10 +275,5 @@ module.exports = function(sequelize, DataTypes) {
     sequelize,
     tableName: 'alloc_lines',
     timestamps: false,
-    hooks: {
-      beforeSave: (alloc_lines) => {
-        alloc_lines.wos = 18.219;
-      }
-    }  
   }
 )};

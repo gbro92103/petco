@@ -65,12 +65,16 @@ function initModels(sequelize) {
   skus.belongsTo(vendors, { as: "primary_vend_vendor", foreignKey: "primary_vend"});
   vendors.hasMany(skus, { as: "skus", foreignKey: "primary_vend"});
 
-  stores.hasMany(alloc_lines, { foreignKey: 'str_nbr' });
-  alloc_lines.belongsTo(stores, { foreignKey: 'str_nbr' });
-
+  alloc_params.hasMany(alloc_lines, {as: 'par', foreignKey: 'alloc_param_id' });
+  alloc_lines.belongsTo(alloc_params, {as: 'alloc_params', foreignKey: 'alloc_param_id' });
+  stores.hasMany(alloc_lines, {as: 'str', foreignKey: 'str_nbr'});
+  alloc_lines.belongsTo(stores, {as: 'str_meth', foreignKey: 'str_nbr' });
+  stores.hasMany(alloc_lines, {foreignKey: 'str_nbr', sourceKey: 'str_nbr' });
+  alloc_lines.belongsTo(stores, {foreignKey: 'str_nbr', targetKey: 'str_nbr' });
+  
   alloc_lines.prototype.calculateQtySldPerWeek = async function() {
     const salesMethod = this.sales_method;
-    const avgWeeklySldPerStore = this.avg_weekly_sld_per_store || 0;
+    const avgWeeklySldPerStore = this.avg_weekly_sold_per_store || 0;
     const store = await this.getStore();
   
     if (!store) return 0;

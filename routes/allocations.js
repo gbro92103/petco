@@ -4,6 +4,7 @@ const router = express.Router();
 // Require controller modules.
 const allocation_controller = require("../controllers/allocationController");
 const allocation_lines_controller = require("../controllers/allocationLinesController")
+const allocation_logic_controller = require("../controllers/allocationLogicController")
 const rcac_controller = require("../controllers/rcacController");
 const vendor_controller = require("../controllers/vendorController");
 const { requireLogin, requirePermission } = require("../routes/middleware");
@@ -32,7 +33,7 @@ router.get("/:id/update/", requireLogin, allocation_controller.update_allocation
 router.post("/submit-allocation/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_controller.validateAllocSettings, allocation_controller.validateAllocParams, allocation_controller.save_allocation_post);
 
 /*recalc allocation */
-router.post("/:id/recalc-allocation/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_lines_controller.recalc_allocation_post);
+router.post("/:id/recalc-allocation/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_lines_controller.recalc_allocation_post, allocation_logic_controller.determine_alloc_qtys);
 
 /*save alloc lines*/
 router.post("/:id/save-alloc-line/", requireLogin, requirePermission("canReviewAllocations"), allocation_controller.save_alloc_line_post);

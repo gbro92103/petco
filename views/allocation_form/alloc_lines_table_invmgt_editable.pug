@@ -33,7 +33,7 @@ if allocLines && allocLines.length > 0
               select(name=`sales_method_${line.alloc_line_id}`)
                 option(value="LY Sold" selected=line.sales_method==="LY Sold") LY Sold
                 option(value="CY Sold" selected=line.sales_method==="CY Sold") CY Sold
-                option(value="Subclass Factor" selected=line.sales_method==="Subclass Factor") Subclass Factor
+                option(value="SC Factor" selected=line.sales_method==="SC Factor") Subclass Factor
                 option(value="Sku Factor" selected=line.sales_method==="Sku Factor") Sku Factor
           else
             td= line.sales_method
@@ -41,7 +41,7 @@ if allocLines && allocLines.length > 0
           td= line.use_sku_factor
           td= line.use_ly_sld
           td= line.use_cy_sld
-          td= line.qoh_plus_qoo 
+          td= line.qoh_plus_qoo
           td= line.wos ? line.wos.toFixed(2) : ""
           if (allocation.alloc_status === 'Setup')
             td

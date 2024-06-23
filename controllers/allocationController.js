@@ -338,7 +338,7 @@ exports.validateAllocParams = [
     .withMessage('"Target WOS/Qty" must be greater than 0. Target Qty (if selected) must be an integer.'),
 
   check('allocParams.*.main_sales_method')
-    .isIn(['CY Sold', 'LY Sold', 'Subclass Factor', 'Sku Factor'])
+    .isIn(['CY Sold', 'LY Sold', 'SC Factor', 'Sku Factor'])
     .withMessage('Main Sales Method is not valid.'),
 
   check('allocParams.*.avg_weekly_sold_per_store')
@@ -411,5 +411,3 @@ exports.validateAllocParams = [
     .isFloat({ gt: 0 })
     .withMessage('Allocation Cost must be a positive number greater than zero.')
 ];
-
-

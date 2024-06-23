@@ -21,8 +21,9 @@ exports.recalc_allocation_post = asyncHandler(async (req, res, next) => {
         await reinsertRCACNotes(allocID, transaction);
         await clearRCACNotesTable(allocID, transaction);
         await insertRCACReviewRecords(allocID, transaction);
+        
         await transaction.commit();
-        res.status(200).json({error: 'false', errorMsg: '', message: 'Data saved correctly.'})
+        next();
     } catch (error) {
         await transaction.rollback();
         console.error(error);
@@ -269,12 +270,11 @@ async function updateWithVendorInfo(alloc_id, transaction) {
 
 async function reinsertRCACNotes(alloc_id, transaction) {
     try {
-      // Fetch the relevant records from save_rcac_notes
-      const notesToUpdate = await db.save_rcac_notes.findAll({
-        where: {
-            alloc_id: alloc_id
-        },
-        transaction
+        // Fetch the relevant records from save_rcac_notes
+        const notesToUpdate = await db.save_rcac_notes.findAll({
+            where: {
+                alloc_id: alloc_id
+            },
         });
 
         // Loop through each record and update alloc_lines
@@ -304,14 +304,13 @@ async function insertRCACReviewRecords(alloc_id, transaction) {
     try {
        // Fetch distinct records from alloc_lines
        const distinctRecords = await db.alloc_lines.findAll({
-        attributes: [
-            [db.sequelize.fn('DISTINCT', db.sequelize.col('alloc_id')), 'alloc_id'],
-            'rcac_id'
-        ],
-        where: {
-            alloc_id: alloc_id
-        },
-        transaction
+            attributes: [
+                [db.sequelize.fn('DISTINCT', db.sequelize.col('alloc_id')), 'alloc_id'],
+                'rcac_id'
+            ],
+            where: {
+                alloc_id: alloc_id
+            }
         });
 
         // Prepare the records for insertion

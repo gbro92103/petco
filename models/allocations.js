@@ -22,7 +22,15 @@ module.exports = function(sequelize, DataTypes) {
     alloc_status: {
       type: DataTypes.TEXT,
       allowNull: true
-    }
+    },
+    total_qty: {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
+    total_cost: {
+      type: DataTypes.REAL,
+      allowNull: true
+    },
   }, {
     sequelize,
     tableName: 'allocations',
