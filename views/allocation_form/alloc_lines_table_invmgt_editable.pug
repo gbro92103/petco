@@ -45,7 +45,7 @@ if allocLines && allocLines.length > 0
           td= line.wos ? line.wos.toFixed(2) : ""
           if (allocation.alloc_status === 'Setup')
             td
-              input(type="text" name=`alloc_qty_${line.alloc_line_id}}` value=line.alloc_qty)
+              input(type="text" name=`calc_alloc_qty_${line.alloc_line_id}}` value=line.calc_alloc_qty)
           else 
             td= line.alloc_qty
           td

@@ -10,6 +10,8 @@ exports.determine_alloc_qtys = asyncHandler(async (req, res, next) => {
 
         await updateSalesMethod(allocID);
         await setRankAndExclusions(allocID);
+        await setAllocQtys(allocID);
+
         res.status(200).json({error: 'false', errorMsg: '', message: 'Data saved correctly.'});
         
     } catch(error) {
@@ -77,6 +79,7 @@ async function setRankAndExclusions(alloc_id) {
 
         group.forEach((record, index) => {
             record.rank = index + 1;
+            record.calc_alloc_qty = 0;
             record.is_excluded = false;
             record.is_filtered = false;
 
@@ -97,8 +100,6 @@ async function setRankAndExclusions(alloc_id) {
                 record.is_excluded = true;
                 record.is_filtered = true;
             }
-
-            console.log(`Rank: ${record.rank} - Store #: ${record.str_nbr} Exlcuded: ${record.is_excluded} - Filtered: ${record.is_filtered}`);
         });
     });
     
@@ -123,6 +124,193 @@ async function setRankAndExclusions(alloc_id) {
     }
 }
 
+async function setAllocQtys(alloc_id) {
+
+    const allocationLines = await db.alloc_lines.findAll({
+        where: { alloc_id },
+        include: [
+            { model: db.alloc_params, as: 'alloc_params' },
+        ]
+    });
+    
+    // Group by alloc_param_id
+    const groupedByAllocParamId = allocationLines.reduce((acc, record) => {
+        const allocParamId = record.alloc_param_id;
+        if (!acc[allocParamId]) {
+            acc[allocParamId] = { alloc_params: record.alloc_params, records: [] };
+        }
+        if (!record.is_excluded) {
+            acc[allocParamId].records.push(record);
+        }
+        return acc;
+    }, {});
+
+    let updatedRecords = [];
+    
+    // Sort and rank within each group
+    Object.values(groupedByAllocParamId).forEach(group => {
+
+        const allocMethod = group.alloc_params.alloc_method;
+
+        if (allocMethod === 'Target WOS') {
+            updatedRecords = byTargetWOS(group.alloc_params, group.records);
+        } else if (allocMethod === 'Target Qty') {
+            updatedRecords = byTargetQty(group.alloc_params, group.records);
+        } else if (allocMethod === 'Ignore QOH/Target Qty') {
+            updatedRecords = byTargetQtyIgnoreQOH(group.alloc_params, group.records);
+        }
+    });
+
+    const transaction = await db.sequelize.transaction();
+
+    try {
+        for (const record of updatedRecords) {
+            await record.update(
+                { calc_alloc_qty: record.calc_alloc_qty
+                }, { transaction });
+        }
+
+        await transaction.commit();
+    } catch (error) {
+        await transaction.rollback();
+        throw error;
+    }
+}
+
+function byTargetWOS(params, records) {
+    const minPerStore = params.min_per_store;
+    const maxPerStore = params.max_per_store;
+    const eoq = params.eoq;
+    const targetWos = params.target_value;
+
+    records.forEach(record => {
+        let allocQty = (record.qty_sld_per_week * targetWos) -
+            record.qoh_plus_qoo;
+
+        allocQty = roundToNearestEOQ(allocQty, eoq);
+
+        if (minPerStore && allocQty < minPerStore)
+            allocQty = minPerStore;
+
+        else if (maxPerStore && allocQty > maxPerStore)
+            allocQty = maxPerStore;
+
+        record.calc_alloc_qty = allocQty;
+    });
+
+    return records;
+}
+
+function byTargetQty(params, records) {
+    let qtyAllocated = 0;
+
+    //add min per store
+    if (params.min_per_store && params.min_per_store > 0) {
+        records.forEach((record) => {
+            let min = params.min_per_store;
+            if (min < params.eoq)
+                min = params.eoq;
+
+            record.calc_alloc_qty = min;
+            qtyAllocated += min;
+        });
+    }
+
+    // Find total qty remaining to allocate
+    let totQtyRemaining = params.target_value - qtyAllocated;
+    let loopComplete = false;
+
+    //loop thry and allocate qty
+    while (totQtyRemaining > 0 && !loopComplete) {
+        // Find stores to allocate to
+        let allocStores = records.filter((record) => !record.is_excluded);
+
+        // filter out stores above max
+        if (params.max_per_store) {
+            allocStores = allocStores.filter((record) => {
+                return record.calc_alloc_qty + params.eoq <= params.max_per_store
+            });
+        }
+
+        // Set test WOS
+        allocStores.forEach((record) => {
+            record.testWOS = (record.qoh_plus_qoo + (record.calc_alloc_qty || 0) + params.eoq) /
+                record.qty_sld_per_week;
+        });
+
+        // Sort by test WOS
+        allocStores.sort((a, b) => a.testWOS - b.testWOS);
+
+        // Push eoq to first store in need
+        if (allocStores.length > 0) {
+            allocStores[0].calc_alloc_qty += params.eoq;
+            qtyAllocated += params.eoq;
+            totQtyRemaining -= params.eoq;
+        } else {
+            loopComplete = true;
+        }
+    }
+
+    return records;
+}
+
+
+function byTargetQtyIgnoreQOH(params, records) {
+    let qtyAllocated = 0;
+
+    //add min per store
+    if (params.min_per_store && params.min_per_store > 0) {
+        records.forEach((record) => {
+            let min = params.min_per_store;
+            if (min < params.eoq)
+                min = params.eoq;
+
+            record.calc_alloc_qty = min;
+            qtyAllocated += min;
+        });
+    }
+
+    // Find total qty remaining to allocate
+    let totQtyRemaining = params.target_value - qtyAllocated;
+    let loopComplete = false;
+
+    let totCompanySldPerWk = records.reduce((prev, cur) => {
+        return prev + cur.qty_sld_per_week;
+    }, 0);
+
+    //loop thry and allocate qty
+    while (totQtyRemaining > 0 && !loopComplete) {
+        // Find stores to allocate to
+        let allocStores = records.filter((record) => !record.is_excluded);
+
+        // filter out stores above max
+        if (params.max_per_store) {
+            allocStores = allocStores.filter((record) => {
+                return record.calc_alloc_qty + params.eoq <= params.max_per_store
+            });
+        }
+
+        //set allocation qty need
+        allocStores.forEach((line) => {
+            line.allocQtyNeed = (line.qty_sld_per_week / totCompanySldPerWk)
+                * params.target_value - line.calc_alloc_qty;
+        });
+
+        // Sort by test WOS
+        allocStores.sort((a, b) => b.allocQtyNeed - a.allocQtyNeed);
+
+        // Push eoq to first store in need
+        if (allocStores.length > 0) {
+            allocStores[0].calc_alloc_qty += params.eoq;
+            qtyAllocated += params.eoq;
+            totQtyRemaining -= params.eoq;
+        } else {
+            loopComplete = true;
+        }
+    }
+
+    return records;
+}
 
 function roundToNearestEOQ(qty, eoq) {
 

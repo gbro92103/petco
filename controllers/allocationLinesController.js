@@ -96,12 +96,12 @@ async function insertInvLocRecords(alloc_id, transaction) {
         sku_nbr, str_nbr, ly_sld, cy_sld, sc_factor, sku_factor, qoh, qoo, ar, attached_vend_id, 
         alloc_param_id, alloc_id, like_sku, avg_weekly_sold_per_store, alloc_method, target_value, 
         min_per_store, max_per_store, eoq, override_store_count, main_sales_method, override_vend_id, 
-        limit_to_attached_vendor, hard_qty_limit, exclude_stores, discounted_cost
+        limit_to_attached_vendor, hard_qty_limit, exclude_stores, discounted_cost, calc_alloc_qty
     )
     SELECT i.sku_nbr, i.str_nbr, i.ly_sld, i.cy_sld, i.sc_factor, i.sku_factor, i.qoh, i.qoo, i.ar, i.vend_id, 
         p.alloc_param_id, p.alloc_id, p.like_sku, p.avg_weekly_sold_per_store, p.alloc_method, p.target_value, 
         p.min_per_store, p.max_per_store, p.eoq, p.override_store_count, p.main_sales_method, p.override_vend_id, 
-        p.limit_to_attached_vendor, p.hard_qty_limit, p.exclude_stores, p.discounted_cost
+        p.limit_to_attached_vendor, p.hard_qty_limit, p.exclude_stores, p.discounted_cost, 0
     FROM invloc i
     INNER JOIN alloc_params p ON p.sku_nbr = i.sku_nbr
     WHERE p.alloc_id = :alloc_id

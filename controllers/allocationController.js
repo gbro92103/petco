@@ -106,9 +106,6 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
           menuOptions: menuOptions,
           permissions: userPermissions
         }); 
-        
-        console.log("Allocation Data sent to get form:", alloc);
-
     } catch (error) {
         console.error("Error:", error.message);
     }
