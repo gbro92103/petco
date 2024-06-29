@@ -11,9 +11,7 @@ exports.determine_alloc_qtys = asyncHandler(async (req, res, next) => {
         await updateSalesMethod(allocID);
         await setRankAndExclusions(allocID);
         await setAllocQtys(allocID);
-
-        res.status(200).json({error: 'false', errorMsg: '', message: 'Data saved correctly.'});
-        
+        next();
     } catch(error) {
         console.error(error);
         res.status(500).json({ error: 'true', errorMsg: 'An error occurred while recalcing the allocation.' });

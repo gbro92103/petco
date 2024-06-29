@@ -9,27 +9,27 @@ module.exports = function(sequelize, DataTypes) {
     },
     sku_nbr: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     str_nbr: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     ly_sld: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     cy_sld: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     sc_factor: {
       type: DataTypes.REAL,
-      allowNull: true
+      allowNull: false
     },
     sku_factor: {
       type: DataTypes.REAL,
-      allowNull: true
+      allowNull: false
     },
     use_ly_sld: {
       type: DataTypes.VIRTUAL,
@@ -83,51 +83,23 @@ module.exports = function(sequelize, DataTypes) {
     },
     ar: {
       type: DataTypes.BOOLEAN,
-      allowNull: true
+      allowNull: false
+    },
+    blocked: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false
     },
     attached_vend_id: {
       type: "TEXT(5)",
       allowNull: true
     },
+    act_vend_id: {
+      type: "TEXT(5)",
+      allowNull: true
+    },
     alloc_param_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    alloc_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    like_sku: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    avg_weekly_sold_per_store: {
-      type: DataTypes.REAL,
-      allowNull: true
-    },
-    alloc_method: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    target_value: {
-      type: DataTypes.REAL,
-      allowNull: true
-    },
-    min_per_store: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    max_per_store: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    eoq: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    override_store_count: {
-      type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: false
     },
     rank: {
       type: DataTypes.INTEGER,
@@ -141,47 +113,7 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },
-    main_sales_method: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
     sales_method: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    override_vend_id: {
-      type: "TEXT(5)",
-      allowNull: true
-    },
-    limit_to_attached_vendor: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true
-    },
-    hard_qty_limit: {
-      type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    exclude_stores: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true
-    },
-    discounted_cost: {
-      type: DataTypes.REAL,
-      allowNull: true
-    },
-    desc: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    dept: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    subclass: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    str_name: {
       type: DataTypes.TEXT,
       allowNull: true
     },
@@ -189,16 +121,8 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: true
     },
-    zone_name: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
     rdac_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
-    },
-    rdac_name: {
-      type: DataTypes.TEXT,
       allowNull: true
     },
     dist_id: {
@@ -209,41 +133,9 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER,
       allowNull: true
     },
-    rcac_name: {
+    override_vend_id: {
       type: DataTypes.TEXT,
       allowNull: true
-    },
-    dt_opened: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    dt_closed: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    str_active: {
-      type: DataTypes.BOOLEAN,
-      allowNull: true
-    },
-    attached_vend_name: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    override_vend_name: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    act_vend_id: {
-      type: DataTypes.VIRTUAL,
-      get() {
-        return override_vend_id || attached_vend_id 
-      }
-    },
-    act_vend_name: {
-      type: DataTypes.VIRTUAL,
-      get() {
-        return override_vend_name || override_vend_name
-      }
     },
     calc_alloc_qty: {
       type: DataTypes.INTEGER,
@@ -254,10 +146,8 @@ module.exports = function(sequelize, DataTypes) {
       allowNull: true
     },
     act_alloc_qty: {
-      type: DataTypes.VIRTUAL,
-      get() {
-        return this.revised_alloc_qty || this.calc_alloc_qty || 0;
-      }
+      type: DataTypes.INTEGER,
+      allowNull: false
     },
     notes: {
       type: DataTypes.INTEGER,
@@ -277,3 +167,4 @@ module.exports = function(sequelize, DataTypes) {
     timestamps: false,
   }
 )};
+

@@ -3,6 +3,7 @@ const db = require('../config/db');
 const permissions = require('../controllers/permissionsController');
 const { check, body, validationResult } = require('express-validator');
 const moment = require('moment');
+const alloc_params = require("../models/alloc_params");
 
 // Display list of all allocations.
 exports.allocations_list_get = asyncHandler(async (req, res, next) => {
@@ -76,7 +77,7 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
             where: {alloc_id: req.params.id}
         });
 
-        let params = await db.alloc_params.findAll({
+        const params = await db.alloc_params.findAll({
             include: [{
                 model: db.skus,
                 as: 'sku_nbr_sku',
@@ -88,20 +89,34 @@ exports.update_allocation_get = asyncHandler(async (req, res, next) => {
         });
     
         const lines = await db.alloc_lines.findAll({
+          include: [
+            {
+                model: db.skus,
+                as: 'skus_lines',
+                attributes: ['desc']
+            },
+            {
+                model: db.stores,
+                as: 'str_meth',
+                attributes: ['str_name', 'dt_opened']
+            },
+            {
+                model: db.users,
+                as: 'rcac',
+                attributes: ['full_name']
+            }
+        ],
             where: {
                 alloc_id: req.params.id
             }   
         });
 
-        const sums = {totalAllocCost: "$0.00", totalAllocQty: 0};
-          
         res.render("main_allocation_template", { 
           title: "Update Allocation",
           currentPage: "allocations",
           allocation: alloc,
           allocParams: params,
           allocLines: lines, 
-          sums: sums,
           user: loggedInUser,
           menuOptions: menuOptions,
           permissions: userPermissions
@@ -232,10 +247,59 @@ exports.update_desc_and_costs_post = asyncHandler(async (req, res, next) => {
   }
 });
 
-exports.save_alloc_line_post = asyncHandler(async (req, res, next) => {
+exports.update_allocation_totals_post = asyncHandler(async (req, res, next) => {
+  try {
+    const allocId = req.params.id; 
+    const query = `
+      UPDATE alloc_params
+      SET act_alloc_qty = (
+            SELECT COALESCE(SUM(l.act_alloc_qty), 0)
+            FROM alloc_lines l
+            WHERE l.alloc_param_id = alloc_params.alloc_param_id
+              AND l.act_alloc_qty > 0
+          ),
+          total_cost = (
+            SELECT COALESCE(SUM(l.act_alloc_qty) * alloc_params.discounted_cost, 0)
+            FROM alloc_lines l
+            WHERE l.alloc_param_id = alloc_params.alloc_param_id
+              AND l.act_alloc_qty > 0
+          ),
+          act_nbr_of_stores = (
+            SELECT COALESCE(COUNT(*), 0)
+            FROM alloc_lines l
+            WHERE l.alloc_param_id = alloc_params.alloc_param_id
+              AND l.act_alloc_qty > 0
+          )
+      WHERE alloc_id = :alloc_id;
+    `;
 
+    await db.sequelize.query(query, {
+      replacements: { alloc_id: allocId },
+      type: db.sequelize.QueryTypes.UPDATE,
+    });
+
+
+    const [[{ total_alloc_cost, total_alloc_qty }]] = await db.sequelize.query(`
+    SELECT 
+      COALESCE(SUM(total_cost), 0) AS total_alloc_cost,
+      COALESCE(SUM(act_alloc_qty), 0) AS total_alloc_qty
+    FROM alloc_params
+    WHERE alloc_id = ${allocId}
+  `);
+
+    await db.allocations.update({
+      total_cost: total_alloc_cost,
+      total_qty: total_alloc_qty
+    }, {
+      where: { alloc_id: allocId }
+    });
+  
+    console.log('Allocation totals updated successfully.');
+    res.status(200).json({error: 'false', errorMsg: '', message: 'Data saved correctly.'});
+  } catch (error) {
+    console.error('Error updating allocation totals:', error);
+  }
 });
-
 
 async function isSkuExists(sku_nbr) {
   try {

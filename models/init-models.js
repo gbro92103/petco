@@ -1,9 +1,6 @@
 var DataTypes = require("sequelize").DataTypes;
-var _SequelizeMeta = require("./SequelizeMeta");
 var _alloc_lines = require("./alloc_lines");
-var _alloc_lines_old = require("./alloc_lines_old");
 var _alloc_params = require("./alloc_params");
-var _alloc_params_backup = require("./alloc_params_backup");
 var _allocations = require("./allocations");
 var _invloc = require("./invloc");
 var _rcac_reviews = require("./rcac_reviews");
@@ -15,11 +12,8 @@ var _vendors = require("./vendors");
 var _zones = require("./zones");
 
 function initModels(sequelize) {
-  var SequelizeMeta = _SequelizeMeta(sequelize, DataTypes);
   var alloc_lines = _alloc_lines(sequelize, DataTypes);
-  var alloc_lines_old = _alloc_lines_old(sequelize, DataTypes);
   var alloc_params = _alloc_params(sequelize, DataTypes);
-  var alloc_params_backup = _alloc_params_backup(sequelize, DataTypes);
   var allocations = _allocations(sequelize, DataTypes);
   var invloc = _invloc(sequelize, DataTypes);
   var rcac_reviews = _rcac_reviews(sequelize, DataTypes);
@@ -32,18 +26,12 @@ function initModels(sequelize) {
 
   alloc_params.belongsTo(allocations, { as: "alloc", foreignKey: "alloc_id"});
   allocations.hasMany(alloc_params, { as: "alloc_params", foreignKey: "alloc_id"});
-  alloc_params_backup.belongsTo(allocations, { as: "alloc", foreignKey: "alloc_id"});
-  allocations.hasMany(alloc_params_backup, { as: "alloc_params_backups", foreignKey: "alloc_id"});
   rcac_reviews.belongsTo(allocations, { as: "alloc", foreignKey: "alloc_id"});
   allocations.hasMany(rcac_reviews, { as: "rcac_reviews", foreignKey: "alloc_id"});
   alloc_params.belongsTo(skus, { as: "like_sku_sku", foreignKey: "like_sku"});
   skus.hasMany(alloc_params, { as: "alloc_params", foreignKey: "like_sku"});
   alloc_params.belongsTo(skus, { as: "sku_nbr_sku", foreignKey: "sku_nbr"});
   skus.hasMany(alloc_params, { as: "sku_nbr_alloc_params", foreignKey: "sku_nbr"});
-  alloc_params_backup.belongsTo(skus, { as: "like_sku_sku", foreignKey: "like_sku"});
-  skus.hasMany(alloc_params_backup, { as: "alloc_params_backups", foreignKey: "like_sku"});
-  alloc_params_backup.belongsTo(skus, { as: "sku_nbr_sku", foreignKey: "sku_nbr"});
-  skus.hasMany(alloc_params_backup, { as: "sku_nbr_alloc_params_backups", foreignKey: "sku_nbr"});
   invloc.belongsTo(skus, { as: "sku_nbr_sku", foreignKey: "sku_nbr"});
   skus.hasMany(invloc, { as: "invlocs", foreignKey: "sku_nbr"});
   invloc.belongsTo(stores, { as: "str_nbr_store", foreignKey: "str_nbr"});
@@ -58,17 +46,20 @@ function initModels(sequelize) {
   users.hasMany(zones, { as: "zones", foreignKey: "rdac_id"});
   alloc_params.belongsTo(vendors, { as: "override_vend", foreignKey: "override_vend_id"});
   vendors.hasMany(alloc_params, { as: "alloc_params", foreignKey: "override_vend_id"});
-  alloc_params_backup.belongsTo(vendors, { as: "alloc_vend", foreignKey: "alloc_vend_id"});
-  vendors.hasMany(alloc_params_backup, { as: "alloc_params_backups", foreignKey: "alloc_vend_id"});
   invloc.belongsTo(vendors, { as: "vend", foreignKey: "vend_id"});
   vendors.hasMany(invloc, { as: "invlocs", foreignKey: "vend_id"});
   skus.belongsTo(vendors, { as: "primary_vend_vendor", foreignKey: "primary_vend"});
   vendors.hasMany(skus, { as: "skus", foreignKey: "primary_vend"});
 
-  alloc_params.hasMany(alloc_lines, {as: 'par', foreignKey: 'alloc_param_id' });
+  users.hasMany(alloc_lines, {as: 'rcac_lines', foreignKey: 'rcac_id'});
+  alloc_lines.belongsTo(users, {as: 'rcac', foreignKey: 'rcac_id'});
+
+  alloc_params.hasMany(alloc_lines, {as: 'alloc_lines', foreignKey: 'alloc_param_id' });
   alloc_lines.belongsTo(alloc_params, {as: 'alloc_params', foreignKey: 'alloc_param_id' });
   stores.hasMany(alloc_lines, {as: 'str', foreignKey: 'str_nbr'});
   alloc_lines.belongsTo(stores, {as: 'str_meth', foreignKey: 'str_nbr' });
+  skus.hasMany(alloc_lines, {as: 'sku', foreignKey: 'sku_nbr'});
+  alloc_lines.belongsTo(skus, {as: 'skus_lines', foreignKey: 'sku_nbr' });
   stores.hasMany(alloc_lines, {foreignKey: 'str_nbr', sourceKey: 'str_nbr' });
   alloc_lines.belongsTo(stores, {foreignKey: 'str_nbr', targetKey: 'str_nbr' });
   
@@ -105,13 +96,30 @@ function initModels(sequelize) {
       }
     }
   });
+
+    // Hook for alloc_lines.act_alloc_qty
+ alloc_lines.addHook('beforeSave', (allocLine) => {
+  if (!allocLine.revised_alloc_qty && !allocLine.calc_alloc_qty) {
+    allocLine.act_alloc_qty = 0;
+  } else if (!allocLine.revised_alloc_qty) {
+    allocLine.act_alloc_qty = allocLine.calc_alloc_qty;
+  } else {
+    allocLine.act_alloc_qty = allocLine.revised_alloc_qty;
+  }
+});
+
+// Hook for alloc_lines.act_vend_id
+alloc_lines.addHook('beforeSave', (allocLine) => {
+  if (!allocLine.override_vend_id) {
+    allocLine.act_vend_id = allocLine.attached_vend_id;
+  } else {
+    allocLine.act_vend_id = allocLine.override_vend_id;
+  }
+});
   
   return {
-    SequelizeMeta,
     alloc_lines,
-    alloc_lines_old,
     alloc_params,
-    alloc_params_backup,
     allocations,
     invloc,
     rcac_reviews,

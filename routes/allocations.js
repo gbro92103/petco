@@ -33,10 +33,10 @@ router.get("/:id/update/", requireLogin, allocation_controller.update_allocation
 router.post("/submit-allocation/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_controller.validateAllocSettings, allocation_controller.validateAllocParams, allocation_controller.save_allocation_post);
 
 /*recalc allocation */
-router.post("/:id/recalc-allocation/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_lines_controller.recalc_allocation_post, allocation_logic_controller.determine_alloc_qtys);
+router.post("/:id/recalc-allocation/", requireLogin, requirePermission("canUpdateAllocParams"), allocation_lines_controller.recalc_allocation_post, allocation_logic_controller.determine_alloc_qtys, allocation_controller.update_allocation_totals_post);
 
 /*save alloc lines*/
-router.post("/:id/save-alloc-line/", requireLogin, requirePermission("canReviewAllocations"), allocation_controller.save_alloc_line_post);
+router.post("/save-alloc-line/", requireLogin, requirePermission("canUpdateAllocations"), allocation_lines_controller.validateAllocLine, allocation_lines_controller.save_alloc_line_post, allocation_controller.update_allocation_totals_post);
 
 /*update desc and costs when sku number is changed in alloc params table */
 router.get("/:skuNbr/get-desc-and-costs/", requireLogin, requirePermission("canUpdateAllocations"), allocation_controller.update_desc_and_costs_post);

@@ -229,12 +229,12 @@ iframe {
 }
 
 /* Adjusting the width of the notes column and revised allocation qty text box */
-.alloc-lines-table td:nth-child(15) input[type="text"] {
+.alloc-lines-table td:nth-child(16) input[type="text"] {
   width: 300px;
 } /* Notes column */
 
-.alloc-lines-table td:nth-child(13) input[type="text"],
-.alloc-lines-table td:nth-child(14) input[type="text"] { /* Revised allocation qty text box */
+.alloc-lines-table td:nth-child(14) input[type="text"],
+.alloc-lines-table td:nth-child(15) input[type="text"] { /* Revised allocation qty text box */
   width: 60px; /* Adjust width as needed */
   text-align: center;
 }

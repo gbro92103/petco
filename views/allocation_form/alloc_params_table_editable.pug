@@ -86,25 +86,17 @@ table.table.alloc-params-table
           td.read-only(data-name=`allocParams[act_nbr_of_stores][${index}]`)= allocParam.act_nbr_of_stores
           td
             button(data-row-key=index, data-param-key=allocParam.alloc_param_id, type='button').button.delete-action Delete
-    if permissions.canAddAllocParams
-      tr.add-new-row
-        td(colspan="15")
+    tr.add-new-row
+      td(colspan="15")
+        if permissions.canAddAllocParams
           button(type='button').button.add-new-param Add Sku To Allocation
-        td.totals= sums.totalAllocQty 
-        td 
-        td 
-        td.totals= sums.totalAllocCost
-        td 
-        td 
-    else 
-      tr 
-        td(colspan="15")
-        td.totals= sums.totalAllocQty
-        td 
-        td 
-        td.totals= sums.totalAllocCost 
-        td 
-        td  
+      td.totals= allocation.total_qty 
+      td 
+      td 
+      td.totals= allocation.total_cost
+      td 
+      td 
+ 
 
 
 

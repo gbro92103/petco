@@ -21,16 +21,18 @@ if allocLines && allocLines.length > 0
           th RCAC Name
         th Notes       
     tbody
-      each line in allocLines
+      each line, index in allocLines
         tr
+          td(hidden)
+            input(type="hidden" name=`alloc_line_${index}` value=line.alloc_line_id)
           td= line.str_nbr
-          td= line.str_name
-          td= line.dt_opened
+          td= line.str_meth.str_name
+          td= line.str_meth.dt_opened
           td= line.sku_nbr
-          td= line.desc
+          td= line.skus_lines.desc
           if (allocation.alloc_status === 'Setup')
             td
-              select(name=`sales_method_${line.alloc_line_id}`)
+              select(name=`sales_method_${index}`)
                 option(value="LY Sold" selected=line.sales_method==="LY Sold") LY Sold
                 option(value="CY Sold" selected=line.sales_method==="CY Sold") CY Sold
                 option(value="SC Factor" selected=line.sales_method==="SC Factor") Subclass Factor
@@ -45,13 +47,13 @@ if allocLines && allocLines.length > 0
           td= line.wos ? line.wos.toFixed(2) : ""
           if (allocation.alloc_status === 'Setup')
             td
-              input(type="text" name=`calc_alloc_qty_${line.alloc_line_id}}` value=line.calc_alloc_qty)
+              input(type="text" name=`calc_alloc_qty_${index}}` value=line.calc_alloc_qty)
           else 
             td= line.alloc_qty
           td
-            input(type="text" name=`revised_alloc_qty_${line.alloc_line_id}` value=line.revised_alloc_qty) 
+            input(type="text" name=`revised_alloc_qty_${index}` value=line.revised_alloc_qty) 
           td= line.new_wos ? line.new_wos.toFixed(2) : ""
           if (allocation.alloc_status !== 'Setup')
-            td= line.rcac_name
+            td= line.rcac.full_name
           td
-            input(type="text" name=`notes_${line.alloc_line_id}` value=line.notes)
+            input(type="text" name=`notes_${index}` value=line.notes)
